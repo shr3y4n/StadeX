@@ -27,16 +27,19 @@ This is where fans interact with StadeX.
 * **User Input (The Problem)**: The fan types a query or clicks the Microphone button to describe a problem (e.g., "Where is Section 112?", "Which gate has the shortest queue?", or asks in a foreign language like Spanish: "¿Dónde está el baño?").
 * **AI Output (The Solution)**: The system detects the language, answers in the fan's native tongue, reads live telemetry to find the optimal path, and **dynamically lights up the target gate on the interactive SVG stadium map** with a pulsing neon route highlight.
 
-> **[INSERT SCREENSHOT OF FAN CHAT & MAP PATH HIGHLIGHT HERE]**
-> *(Recommended filename: fan-app-screenshot.png)*
+<img width="1920" height="856" alt="fan-app-screenshot(1)" src="https://github.com/user-attachments/assets/7e63c404-6978-4108-ac7b-1554f85b3767" />
+<img width="1920" height="855" alt="fan-app-screenshot(2)" src="https://github.com/user-attachments/assets/14f2de43-58cd-4e9c-b7d6-f1418d9cbfc0" />
+<img width="1920" height="860" alt="fan-app-screenshot(3)" src="https://github.com/user-attachments/assets/901de539-2f3c-4997-8925-24d1405e1fc3" />
+
+
 
 ### 2. Staff Control Room Telemetry
 This is where stadium operators manage flow.
 * Displays live capacity meters and queue wait times for all 6 gates, updating every 3 seconds.
 * **GenAI Alerts**: When a gate's occupancy crosses the critical threshold (85%), StadeX automatically routes telemetry data to the **Crowd Intelligence Agent** to generate direct, actionable staff commands (e.g., "Gate B is at 88% and rising. Direct overflow traffic to Gate C immediately"). Staff can resolve and clear alerts in real-time.
 
-> **[INSERT SCREENSHOT OF STAFF DASHBOARD & ACTIVE ALERTS FEED HERE]**
-> *(Recommended filename: staff-dashboard-screenshot.png)*
+<img width="1920" height="884" alt="staff-dashboard" src="https://github.com/user-attachments/assets/4e050e21-a844-4905-ac77-4f9c60dd5e01" />
+
 
 ---
 
