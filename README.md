@@ -1,7 +1,21 @@
 # StadeX — Venue Operations Platform
 ### FIFA World Cup 2026 GenAI Hackathon Submission
 
-StadeX is a multi-agent generative AI venue operations system designed to manage fan navigation, predict crowd congestion, and auto-dispatch staff alerts in real-time. It coordinates three specialized AI agents via a central router to keep stadium gates flowing and ensure instant assistance across languages.
+**Slogan**: Next-Gen GenAI Venue Operations & Crowd Flow Orchestrator for the FIFA World Cup 2026.
+
+---
+
+## 🚀 3 Key Features Judges Love
+* **Predictive Crowd Control & Auto-Rerouting**: Real-time telemetry monitors gate queue loads and automatically redirects incoming fan traffic away from congested concourses before bottlenecks form.
+* **Multilingual Hands-Free Kiosk Mode**: Live audio-to-speech navigation assistance in 6 languages (English, Spanish, French, Portuguese, Arabic, and Mandarin) reads accessibility-friendly, step-free directions aloud.
+* **One-Tap Emergency Escalation Center**: Connects staff control terminals with all fan kiosk apps via a Server-Sent Events (SSE) push channel for instant voice evacuation broadcasts.
+
+---
+
+## ⏱️ 30-Second Demo Script
+* **Step 1 (Spike)**: Open the **Staff Control Room** dashboard and select the **Control Room Dashboard** tab. Drag the **Gate B override slider** up to `99%` to simulate a bottleneck crowd surge. Watch the AI Alert Dispatcher immediately generate a critical staff warning.
+* **Step 2 (Reroute)**: Open the **Fan Web App** (or press **Kiosk Mode**). Scan a ticket QR for Section 205. StadeX automatically intercepts the congested path, **forces an auto-reroute to Gate C**, flashes a neon route highlight on the interactive SVG map, and reads the warning aloud.
+* **Step 3 (Evacuate)**: In the **Staff Control Room**, go to the **Emergency Center** tab and click **Evacuate: Fire Emergency**. The Fan App instantly enters evacuation mode, playing a flashing alarm indicator and speaking concourse escape directions.
 
 ---
 
