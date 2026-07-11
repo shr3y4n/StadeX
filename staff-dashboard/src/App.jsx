@@ -126,6 +126,8 @@ export default function App() {
           <button 
             onClick={fetchData}
             disabled={isRefreshing}
+            aria-label="Refresh live telemetry data"
+            aria-busy={isRefreshing}
             className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center"
           >
             <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
@@ -319,6 +321,7 @@ export default function App() {
                   <div className="flex justify-end pl-2">
                     <button
                       onClick={() => handleResolveAlert(alert.id)}
+                      aria-label={`Resolve and clear alert for Gate ${alert.gateId}`}
                       className="px-3 py-1 rounded bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1 shadow shadow-rose-600/10"
                     >
                       <CheckCircle size={10} /> Resolve & Clear

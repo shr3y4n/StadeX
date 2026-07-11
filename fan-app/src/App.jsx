@@ -225,6 +225,7 @@ export default function App() {
               <select 
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
+                aria-label="Select translation language"
                 className="bg-slate-900 border border-slate-700/80 text-slate-200 rounded-lg text-sm px-2.5 py-1 focus:outline-none focus:border-cyan-500 cursor-pointer font-medium"
               >
                 <option value="English">English</option>
@@ -239,6 +240,8 @@ export default function App() {
             <button
               onClick={() => setIsSpeakEnabled(!isSpeakEnabled)}
               title={isSpeakEnabled ? "Disable Read Aloud" : "Enable Read Aloud"}
+              aria-label={isSpeakEnabled ? "Disable voice output" : "Enable voice output"}
+              aria-pressed={isSpeakEnabled}
               className={`p-2 rounded-lg transition-all border ${
                 isSpeakEnabled 
                   ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 shadow-md' 
@@ -310,6 +313,8 @@ export default function App() {
                     : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-slate-100'
                 }`}
                 title={isListening ? "Listening... Click to Stop" : "Click to speak"}
+                aria-label={isListening ? "Stop microphone dictation" : "Start microphone dictation"}
+                aria-pressed={isListening}
               >
                 {isListening ? <MicOff size={18} /> : <Mic size={18} />}
               </button>
@@ -320,6 +325,7 @@ export default function App() {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder={isListening ? "Listening..." : "Ask directions, line lengths, transit..."}
+                aria-label="Ask questions about gates, queue times, or transit"
                 className="flex-1 bg-slate-900 border border-slate-800/80 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100 placeholder-slate-500 transition-colors"
                 disabled={isListening}
               />
@@ -328,6 +334,7 @@ export default function App() {
                 onClick={() => handleSendMessage()}
                 className="p-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white transition-colors flex items-center justify-center shadow-lg shadow-cyan-600/10"
                 disabled={!inputText.trim()}
+                aria-label="Send query"
               >
                 <Send size={18} />
               </button>
@@ -408,7 +415,11 @@ export default function App() {
                 {/* GATE A (North) */}
                 <g 
                   onClick={() => setSelectedGate('A')}
-                  className="cursor-pointer group"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedGate('A'); } }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="Select Gate A North"
+                  className="cursor-pointer group focus:outline-none"
                 >
                   <ellipse 
                     cx="400" cy="40" rx="30" ry="18" 
@@ -425,7 +436,11 @@ export default function App() {
                 {/* GATE B (East) */}
                 <g 
                   onClick={() => setSelectedGate('B')}
-                  className="cursor-pointer group"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedGate('B'); } }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="Select Gate B East"
+                  className="cursor-pointer group focus:outline-none"
                 >
                   <ellipse 
                     cx="760" cy="250" rx="30" ry="18" 
@@ -442,7 +457,11 @@ export default function App() {
                 {/* GATE C (South) */}
                 <g 
                   onClick={() => setSelectedGate('C')}
-                  className="cursor-pointer group"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedGate('C'); } }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="Select Gate C South"
+                  className="cursor-pointer group focus:outline-none"
                 >
                   <ellipse 
                     cx="400" cy="460" rx="30" ry="18" 
@@ -459,7 +478,11 @@ export default function App() {
                 {/* GATE D (West) */}
                 <g 
                   onClick={() => setSelectedGate('D')}
-                  className="cursor-pointer group"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedGate('D'); } }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="Select Gate D West"
+                  className="cursor-pointer group focus:outline-none"
                 >
                   <ellipse 
                     cx="40" cy="250" rx="30" ry="18" 
@@ -476,7 +499,11 @@ export default function App() {
                 {/* GATE E - VIP (North West) */}
                 <g 
                   onClick={() => setSelectedGate('E')}
-                  className="cursor-pointer group"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedGate('E'); } }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="Select Gate E VIP North West"
+                  className="cursor-pointer group focus:outline-none"
                 >
                   <ellipse 
                     cx="150" cy="80" rx="30" ry="18" 
@@ -493,7 +520,11 @@ export default function App() {
                 {/* GATE F - Media (South East) */}
                 <g 
                   onClick={() => setSelectedGate('F')}
-                  className="cursor-pointer group"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedGate('F'); } }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label="Select Gate F Media South East"
+                  className="cursor-pointer group focus:outline-none"
                 >
                   <ellipse 
                     cx="650" cy="420" rx="30" ry="18" 

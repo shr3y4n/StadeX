@@ -1,10 +1,10 @@
 {
   "A": {
-    "occupancy_pct": 54,
+    "occupancy_pct": 53,
     "queue_len_min": 8
   },
   "B": {
-    "occupancy_pct": 70,
+    "occupancy_pct": 86,
     "queue_len_min": 10
   },
   "C": {
@@ -12,15 +12,15 @@
     "queue_len_min": 4
   },
   "D": {
-    "occupancy_pct": 65,
-    "queue_len_min": 8
+    "occupancy_pct": 20,
+    "queue_len_min": 2
   },
   "E": {
-    "occupancy_pct": 22,
-    "queue_len_min": 4
+    "occupancy_pct": 24,
+    "queue_len_min": 2
   },
   "F": {
-    "occupancy_pct": 45,
-    "queue_len_min": 7
+    "occupancy_pct": 75,
+    "queue_len_min": 8
   }
 }

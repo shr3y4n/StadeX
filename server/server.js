@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { processMessage } from './orchestrator.js';
 import { startSimulator, getAlerts, resolveAlert } from './simulator.js';
@@ -13,9 +15,44 @@ const DATA_DIR = path.join(__dirname, '../shared/data');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+// 1. Basic Security Settings
+app.disable('x-powered-by'); // Disable standard header to obscure server technology
+app.use(helmet({
+  contentSecurityPolicy: false // Disabled only to allow external Google Fonts link tag on client apps
+}));
+
+// 2. Rate Limiting for API routes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in standard headers
+  legacyHeaders: false, // Disable legacy headers
+  message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
+});
+app.use('/api/', apiLimiter);
+
+// 3. CORS configuration (allowing local React servers and self-domain)
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'https://stadex.onrender.com'],
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
+
+// Input sanitizer middleware
+const sanitizeInput = (req, res, next) => {
+  if (req.body && typeof req.body === 'object') {
+    for (const key of Object.keys(req.body)) {
+      if (typeof req.body[key] === 'string') {
+        // Strip HTML tag brackets to prevent raw tag injections
+        req.body[key] = req.body[key].replace(/[<>]/g, '');
+      }
+    }
+  }
+  next();
+};
+app.use(sanitizeInput);
 
 // Routes
 // 1. Chat endpoint
