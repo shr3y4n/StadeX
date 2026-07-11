@@ -393,15 +393,15 @@ export default function App() {
       </header>
 
       {/* Emergency Mode Flashing Banner (Feature 3: Emergency Mode) */}
-      {emergency.active && (
+      {emergency?.active && (
         <div className="bg-red-950/90 border-b border-red-500/40 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 animate-pulse shadow-lg shadow-red-500/10 z-40">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
               <AlertTriangle size={20} className="animate-bounce" />
             </div>
             <div>
-              <h2 className="text-sm font-black text-red-400 uppercase tracking-widest">EMERGENCY ESCALATION ACTIVE ({emergency.type})</h2>
-              <p className="text-xs text-slate-100 font-bold leading-relaxed">{emergency.instructions}</p>
+              <h2 className="text-sm font-black text-red-400 uppercase tracking-widest">EMERGENCY ESCALATION ACTIVE ({emergency?.type})</h2>
+              <p className="text-xs text-slate-100 font-bold leading-relaxed">{emergency?.instructions}</p>
             </div>
           </div>
           <span className="px-3 py-1.5 rounded bg-red-700 text-white text-[10px] font-black uppercase tracking-wider animate-bounce shrink-0">
@@ -535,7 +535,7 @@ export default function App() {
               {/* QR Code Ticket Scan Button (Feature 9) */}
               <button
                 onClick={() => setIsQRModalOpen(true)}
-                disabled={emergency.active} // disabled in emergency
+                disabled={emergency?.active} // disabled in emergency
                 className="p-3.5 rounded-xl bg-slate-900 border border-slate-800/80 text-slate-300 hover:border-slate-700 hover:text-slate-100 flex items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 title="Scan Ticket QR Code"
                 aria-label="Scan Ticket QR code"

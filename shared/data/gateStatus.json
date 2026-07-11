@@ -1,26 +1,38 @@
 {
   "A": {
-    "occupancy_pct": 53,
-    "queue_len_min": 8
+    "occupancy_pct": 68,
+    "queue_len_min": 10,
+    "predicted_15m": 76,
+    "predicted_30m": 86
   },
   "B": {
-    "occupancy_pct": 86,
-    "queue_len_min": 10
+    "occupancy_pct": 99,
+    "queue_len_min": 11,
+    "predicted_15m": 99,
+    "predicted_30m": 99
   },
   "C": {
-    "occupancy_pct": 32,
-    "queue_len_min": 4
+    "occupancy_pct": 48,
+    "queue_len_min": 5,
+    "predicted_15m": 40,
+    "predicted_30m": 37
   },
   "D": {
-    "occupancy_pct": 20,
-    "queue_len_min": 2
+    "occupancy_pct": 17,
+    "queue_len_min": 1,
+    "predicted_15m": 10,
+    "predicted_30m": 10
   },
   "E": {
-    "occupancy_pct": 24,
-    "queue_len_min": 2
+    "occupancy_pct": 16,
+    "queue_len_min": 1,
+    "predicted_15m": 10,
+    "predicted_30m": 10
   },
   "F": {
-    "occupancy_pct": 75,
-    "queue_len_min": 8
+    "occupancy_pct": 76,
+    "queue_len_min": 9,
+    "predicted_15m": 79,
+    "predicted_30m": 88
   }
 }

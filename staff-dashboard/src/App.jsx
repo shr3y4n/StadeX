@@ -280,12 +280,12 @@ export default function App() {
       </div>
 
       {/* EMERGENCY FLASHER ON DASHBOARD */}
-      {emergency.active && (
+      {emergency?.active && (
         <div className="bg-red-950 border-b border-red-500/40 px-6 py-3 flex justify-between items-center gap-4 animate-pulse shadow-md shadow-red-500/5 print:hidden">
           <div className="flex items-center gap-2">
             <AlertOctagon className="text-red-400" size={18} />
-            <span className="text-xs font-black uppercase tracking-widest text-red-400">EMERGENCY BROADCAST ACTIVE ({emergency.type})</span>
-            <span className="text-xs text-slate-200 font-semibold pl-2">{emergency.instructions}</span>
+            <span className="text-xs font-black uppercase tracking-widest text-red-400">EMERGENCY BROADCAST ACTIVE ({emergency?.type})</span>
+            <span className="text-xs text-slate-200 font-semibold pl-2">{emergency?.instructions}</span>
           </div>
           <button
             onClick={() => triggerEmergency(null, '', false)}
@@ -755,7 +755,7 @@ export default function App() {
               <div className="grid grid-cols-1 gap-3">
                 <button
                   onClick={() => triggerEmergency('FIRE CONCOURSE EVACUATION', 'FIRE DETECTED IN WEST CONCOURSE. Evacuate calmly through the North and South gates. Do not use elevators.')}
-                  className="w-full p-4 rounded-xl bg-red-650 hover:bg-red-600 active:bg-red-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-between shadow-lg shadow-red-700/10"
+                  className="w-full p-4 rounded-xl bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-between shadow-lg shadow-red-700/10"
                 >
                   <span className="flex items-center gap-2"><Flame size={16} /> Evacuate: Fire Emergency</span>
                   <ChevronRight size={14} />
@@ -791,13 +791,13 @@ export default function App() {
               <div>
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-300">Active Incident Status</h3>
                 <div className="mt-4 p-5 rounded-xl bg-slate-950 border border-slate-800 text-center flex flex-col items-center justify-center min-h-[160px]">
-                  {emergency.active ? (
+                  {emergency?.active ? (
                     <>
                       <div className="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center animate-ping mb-3">
                         <AlertOctagon size={24} />
                       </div>
-                      <h4 className="text-sm font-black text-red-400 uppercase tracking-widest">{emergency.type}</h4>
-                      <p className="text-xs text-slate-300 mt-2 max-w-xs leading-relaxed font-semibold italic">"{emergency.instructions}"</p>
+                      <h4 className="text-sm font-black text-red-400 uppercase tracking-widest">{emergency?.type}</h4>
+                      <p className="text-xs text-slate-300 mt-2 max-w-xs leading-relaxed font-semibold italic">"{emergency?.instructions}"</p>
                     </>
                   ) : (
                     <>
