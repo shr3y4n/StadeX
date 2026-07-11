@@ -91,6 +91,24 @@ declared target language (or auto-detect if not given).
 
 // ----------------------------------------------------
 // Mock Agent Responder (Fallback)
+// Token overlap fuzzy-matching search (Lightweight RAG alternative)
+const calculateFuzzyScore = (query, target) => {
+  const queryWords = query.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  const targetWords = target.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  if (queryWords.length === 0) return 0;
+  
+  let matches = 0;
+  for (const qw of queryWords) {
+    for (const tw of targetWords) {
+      if (tw.includes(qw) || qw.includes(tw)) {
+        matches++;
+        break;
+      }
+    }
+  }
+  return matches / queryWords.length;
+};
+
 // ----------------------------------------------------
 const handleMockRouting = (message, role, declaredLanguage) => {
   const msg = message.toLowerCase();
@@ -201,12 +219,22 @@ const handleMockRouting = (message, role, declaredLanguage) => {
     };
   }
 
-  // 4. Default policy or transit checks (fallback to general policies)
-  const matchedPolicy = policies.find(p => msg.includes(p.category.toLowerCase()) || p.category.toLowerCase().split(' ').some(w => msg.includes(w)));
-  if (matchedPolicy) {
+  // 4. Fuzzy RAG search across policies (Feature 2)
+  let bestPolicy = null;
+  let highestScore = 0;
+  for (const p of policies) {
+    // Weight category match twice as high as general rule text match
+    const score = (calculateFuzzyScore(msg, p.category) * 2.0) + calculateFuzzyScore(msg, p.rule);
+    if (score > highestScore) {
+      highestScore = score;
+      bestPolicy = p;
+    }
+  }
+
+  if (bestPolicy && highestScore > 0.25) {
     return {
       agent_used: 'navigation_agent',
-      reply: `Regarding stadium policy for ${matchedPolicy.category}: ${matchedPolicy.rule} Please follow staff instructions on-site.`,
+      reply: `Regarding stadium policy for "${bestPolicy.category}": ${bestPolicy.rule} Please follow staff instructions on-site.`,
       data: { policies }
     };
   }

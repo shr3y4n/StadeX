@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { processMessage } from './orchestrator.js';
-import { startSimulator, getAlerts, resolveAlert } from './simulator.js';
+import { startSimulator, getAlerts, resolveAlert, onStatusUpdate } from './simulator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -120,6 +120,46 @@ app.get('/api/gate-status', (req, res) => {
     console.error('[API Error in GET /api/gate-status]:', error);
     res.status(500).json({ error: 'Failed to read gateStatus.json.' });
   }
+});
+
+// 5. SSE Gate Status Stream (Real-Time push)
+let sseClients = [];
+
+app.get('/api/gate-status/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  // Send initial data immediately upon connection
+  try {
+    const filePath = path.join(DATA_DIR, 'gateStatus.json');
+    if (fs.existsSync(filePath)) {
+      const rawData = fs.readFileSync(filePath, 'utf8');
+      res.write(`data: ${rawData}\n\n`);
+    }
+  } catch (err) {
+    console.error('[SSE] Initial state send error:', err);
+  }
+
+  sseClients.push(res);
+  console.log(`[SSE] Client connected. Total clients: ${sseClients.length}`);
+
+  req.on('close', () => {
+    sseClients = sseClients.filter(c => c !== res);
+    console.log(`[SSE] Client disconnected. Total clients: ${sseClients.length}`);
+  });
+});
+
+// Broadcast changes from simulator to all connected SSE clients
+onStatusUpdate((status) => {
+  sseClients.forEach(client => {
+    try {
+      client.write(`data: ${JSON.stringify(status)}\n\n`);
+    } catch (e) {
+      console.error('[SSE] Error writing data to client:', e.message);
+    }
+  });
 });
 
 // Serve static frontend builds in production if they exist

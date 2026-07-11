@@ -51,8 +51,41 @@ export default function App() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
+
+    // 1. Set up SSE stream for instant gate status updates
+    const eventSource = new EventSource('/api/gate-status/stream');
+
+    eventSource.onmessage = (event) => {
+      try {
+        const updatedStatus = JSON.parse(event.data);
+        setGateStatus(updatedStatus);
+      } catch (err) {
+        console.error('[SSE] Error parsing status stream data:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.warn('[SSE] EventSource encountered an error, closing connection.', err);
+      eventSource.close();
+    };
+
+    // 2. Poll alerts separately every 4 seconds to sync critical flags
+    const alertsInterval = setInterval(async () => {
+      try {
+        const alertsRes = await fetch('/api/staff-alerts');
+        if (alertsRes.ok) {
+          const alertsData = await alertsRes.json();
+          setAlerts(alertsData);
+        }
+      } catch (err) {
+        console.error('Error polling staff alerts:', err);
+      }
+    }, 4000);
+
+    return () => {
+      eventSource.close();
+      clearInterval(alertsInterval);
+    };
   }, []);
 
   const handleResolveAlert = async (alertId) => {

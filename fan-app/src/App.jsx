@@ -26,7 +26,35 @@ export default function App() {
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Poll live gate status every 5 seconds
+  // Helper to read accessible step-free routes aloud (Feature 4)
+  const speakAccessibleDirections = (gateId) => {
+    const directions = {
+      'A': "To reach Gate A, head to the North concourse. Elevator access is available directly behind Section 106. Walk along the ramp from the North parking entrance. The path is step-free and fully accessible.",
+      'B': "To reach Gate B, head to the East entrance. Accessible escalators are active next to Section 202. If arriving from the metro station, use the ground-level ramp to bypass stairs. Watch for tactile pavement indicators.",
+      'C': "To reach Gate C, head to the South entrance. Gate C is our primary ADA accessible entrance, featuring a flat-grade access path from the accessible parking zone and low-profile ticket turnstiles.",
+      'D': "To reach Gate D, head to the West entrance. Ground-level elevators are located right behind Section 224. Ramps connect directly to the rideshare drop-off zone. Tactile floor pads guide the way to the elevators.",
+      'E': "To reach Gate E VIP entrance, head to the North West gate. It features a private valet ramp and level access directly into the executive suites elevator lobby. Support staff are stationed at the main gates.",
+      'F': "To reach Gate F Media entrance, head to the South East corner of the building. The path is fully step-free, leading from the press parking lot straight into the media briefing room on the ground level."
+    };
+
+    const textToSpeak = directions[gateId] || `Proceed to Gate ${gateId}.`;
+    
+    // Cancel ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.rate = 0.95; // slower for clarity
+    
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Set up EventSource for real-time gate status streaming
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -40,8 +68,25 @@ export default function App() {
       }
     };
     fetchStatus();
-    const interval = setInterval(fetchStatus, 5000);
-    return () => clearInterval(interval);
+
+    const eventSource = new EventSource('/api/gate-status/stream');
+    eventSource.onmessage = (event) => {
+      try {
+        const updatedStatus = JSON.parse(event.data);
+        setGateStatuses(updatedStatus);
+      } catch (err) {
+        console.error('[SSE] Error parsing gate status stream data:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.warn('[SSE] EventSource connection encountered an error, closing.', err);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, []);
 
   // Scroll to bottom on new messages
@@ -589,7 +634,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-4 items-center">
                 <div className="flex items-center gap-2">
                   <Clock className="text-cyan-400" size={16} />
                   <div>
@@ -598,7 +643,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mr-2">
                   <Shield className="text-cyan-400" size={16} />
                   <div>
                     <span className="block text-[10px] text-slate-500 uppercase font-semibold">Occupancy</span>
@@ -609,6 +654,15 @@ export default function App() {
                     }`}>{activeGateStatus.occupancy_pct}%</span>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => speakAccessibleDirections(selectedGate)}
+                  className="px-3 py-2 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800/80 text-cyan-400 hover:text-cyan-300 transition-all flex items-center gap-1.5 shadow-md text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  title="Hear accessible, step-free directions read aloud"
+                  aria-label={`Hear step-free directions to Gate ${selectedGate}`}
+                >
+                  <Volume2 size={13} /> Hear Route
+                </button>
               </div>
             </div>
           </div>

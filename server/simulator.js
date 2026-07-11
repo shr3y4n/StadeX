@@ -18,6 +18,12 @@ let alerts = [
   }
 ];
 
+let statusListeners = [];
+
+export const onStatusUpdate = (cb) => {
+  statusListeners.push(cb);
+};
+
 export const getAlerts = () => {
   return alerts.filter(a => !a.resolved);
 };
@@ -78,6 +84,9 @@ export const startSimulator = () => {
       // Write changes back to gateStatus.json
       fs.writeFileSync(STATUS_PATH, JSON.stringify(status, null, 2), 'utf8');
       console.log('[Simulator] Updated gateStatus.json successfully.');
+
+      // Notify all active status update listeners (SSE stream)
+      statusListeners.forEach(cb => cb(status));
 
     } catch (error) {
       console.error('[Simulator Error]:', error);
