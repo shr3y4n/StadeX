@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, AlertOctagon, Clock, ShieldAlert, CheckCircle, 
   RefreshCw, BarChart2, Radio, Server, Activity, Sliders, Shield,
-  Printer, Flame, HardHat, FileText, Check
+  Printer, Flame, HardHat, FileText, Check, ChevronRight
 } from 'lucide-react';
 
 export default function App() {
