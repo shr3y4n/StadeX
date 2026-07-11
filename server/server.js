@@ -137,7 +137,7 @@ app.get('/api/gate-status/stream', (req, res) => {
     const filePath = path.join(DATA_DIR, 'gateStatus.json');
     if (fs.existsSync(filePath)) {
       const rawData = fs.readFileSync(filePath, 'utf8');
-      res.write(`data: ${rawData}\n\n`);
+      res.write(`data: ${JSON.stringify(JSON.parse(rawData))}\n\n`);
     }
 
     // Send initial emergency status upon connection
