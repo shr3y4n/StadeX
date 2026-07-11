@@ -5,17 +5,26 @@ StadeX is a multi-agent generative AI venue operations system designed to manage
 
 ---
 
-## 🚀 Live Links
+## Built with Antigravity
+StadeX was architected, scaffolded, and built entirely using **Antigravity** (an agentic AI coding environment). Leveraging Antigravity's agentic workspace tools, the system was fully constructed within minutes, including:
+* Monorepo project directory construction.
+* Automatic node runtime environment detection, provisioning, and dependency resolution.
+* Codebase compilation and static asset routing to bind the multi-page React frontends into a single-container Express distribution.
+* End-to-end telemetry and routing validation.
+
+---
+
+## Live Links
 * **Fan Web App**: [stadex.onrender.com](https://stadex.onrender.com)
 * **Staff Control Room**: [stadex.onrender.com/staff](https://stadex.onrender.com/staff)
 
 ---
 
-## 📸 Interface Preview
+## Interface Preview
 
 ### 1. Fan Assistant & Map Panel
 This is where fans interact with StadeX. 
-* **User Input (The Problem)**: The fan types a query or clicks the Microphone button to describe a problem (e.g., *"Where is Section 112?"*, *"Which gate has the shortest queue?"*, or asks in a foreign language like Spanish: *"¿Dónde está el baño?"*).
+* **User Input (The Problem)**: The fan types a query or clicks the Microphone button to describe a problem (e.g., "Where is Section 112?", "Which gate has the shortest queue?", or asks in a foreign language like Spanish: "¿Dónde está el baño?").
 * **AI Output (The Solution)**: The system detects the language, answers in the fan's native tongue, reads live telemetry to find the optimal path, and **dynamically lights up the target gate on the interactive SVG stadium map** with a pulsing neon route highlight.
 
 > **[INSERT SCREENSHOT OF FAN CHAT & MAP PATH HIGHLIGHT HERE]**
@@ -24,14 +33,14 @@ This is where fans interact with StadeX.
 ### 2. Staff Control Room Telemetry
 This is where stadium operators manage flow.
 * Displays live capacity meters and queue wait times for all 6 gates, updating every 3 seconds.
-* **GenAI Alerts**: When a gate's occupancy crosses the critical threshold (85%), StadeX automatically routes telemetry data to the **Crowd Intelligence Agent** to generate direct, actionable staff commands (e.g., *"Gate B is at 88% and rising. Direct overflow traffic to Gate C immediately"*). Staff can resolve and clear alerts in real-time.
+* **GenAI Alerts**: When a gate's occupancy crosses the critical threshold (85%), StadeX automatically routes telemetry data to the **Crowd Intelligence Agent** to generate direct, actionable staff commands (e.g., "Gate B is at 88% and rising. Direct overflow traffic to Gate C immediately"). Staff can resolve and clear alerts in real-time.
 
 > **[INSERT SCREENSHOT OF STAFF DASHBOARD & ACTIVE ALERTS FEED HERE]**
 > *(Recommended filename: staff-dashboard-screenshot.png)*
 
 ---
 
-## 🛠️ System Architecture
+## System Architecture
 
 StadeX is built as a unified full-stack Node.js + React system using Claude API tool-routing:
 
@@ -45,7 +54,7 @@ Staff Dash ┘        │           └── Language Agent (Auto-translation &
 ```
 
 1. **The Orchestrator**: Intercepts fan and staff requests. Instead of general-purpose chatting, it uses Claude's tool-calling protocol to route the message to the single best specialist agent.
-2. **Navigation Agent**: Grounded in venue structural data (`gates.json`, `policies.json`). Directs fans, explains stadium policies, and highlights entry paths.
+2. **Navigation Agent**: Grounded in venue structural data (gates.json, policies.json). Directs fans, explains stadium policies, and highlights entry paths.
 3. **Crowd Intelligence Agent**: Monitors live occupancy numbers. Generates concise, 2-sentence staff alert dispatches to resolve bottlenecks before kickoff.
 4. **Language Agent**: Integrates with the browser's Web Speech API to auto-detect language inputs, translate them, and read responses back aloud.
 
@@ -53,14 +62,14 @@ Staff Dash ┘        │           └── Language Agent (Auto-translation &
 
 ---
 
-## 💻 Tech Stack
+## Tech Stack
 * **Frontend**: React, Vite, Tailwind CSS, Lucide Icons, Web Speech API (Speech Recognition & Speech Synthesis).
 * **Backend**: Node.js, Express, CORS, Dotenv.
-* **LLM Core**: Anthropic Claude API (`claude-3-5-sonnet-20241022`).
+* **LLM Core**: Anthropic Claude API (claude-3-5-sonnet-20241022).
 
 ---
 
-## ⚙️ Running Locally
+## Running Locally
 
 ### Prerequisites
 * **Node.js** (v18 or higher)
@@ -86,12 +95,3 @@ We have included a launch script that boots the backend API, Fan App, and Staff 
 ```
 * Access the **Fan App** at `http://localhost:5173`
 * Access the **Staff Dashboard** at `http://localhost:5174`
-
----
-
-## 🏆 Presentation Script (90-Second Hackathon Demo)
-1. **Explain the Pain Point**: *"Stadium entry gates clog, staff are blind, and foreign fans get lost."*
-2. **Voice & Map Demo**: Open the **Fan App**, switch language to Spanish, and click the mic: *"¿Dónde está la Puerta C?"*. Show StadeX replying in Spanish while the SVG map immediately highlights Gate C.
-3. **Shortest Queue Demo**: Ask in English: *"Which gate has the shortest line?"*. Show StadeX comparing live gate capacities to direct you to Gate C.
-4. **Control Room Sync**: Place the **Staff Dashboard** side-by-side. Watch the gate capacity dials update every 3 seconds. Point to Gate B turning red; within seconds, show the AI-generated operational alert telling staff to redirect traffic. Resolve it in one click.
-5. **Close**: *"One code repository, one orchestrator, routing specialists in real-time grounded in live data. That is StadeX."*
