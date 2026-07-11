@@ -107,8 +107,8 @@ export default function App() {
       {/* Header */}
       <header className="border-b border-slate-800/80 px-6 py-4 bg-stadium-card/60 backdrop-blur-md sticky top-0 z-50 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center font-bold text-white shadow-md shadow-rose-500/20">
-            📊
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-800 flex items-center justify-center text-slate-100 shadow-md">
+            <Activity size={20} />
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-rose-400 bg-clip-text text-transparent">
@@ -218,6 +218,13 @@ export default function App() {
                     <div>
                       <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold border border-slate-700/60 uppercase">
                         {gate.id}
+                      </span>
+                      <span className={`text-[9px] font-bold uppercase ml-2 px-1.5 py-0.5 rounded ${
+                        isOverloaded ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                        isWarning ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                        'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      }`}>
+                        {isOverloaded ? 'Critical' : isWarning ? 'Warning' : 'Nominal'}
                       </span>
                       <h3 className="text-base font-bold text-white mt-2 leading-tight">{gate.name}</h3>
                       <p className="text-xs text-slate-400 mt-1">{gate.location}</p>

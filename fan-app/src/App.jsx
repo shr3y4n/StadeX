@@ -9,7 +9,7 @@ export default function App() {
     {
       id: 1,
       sender: 'bot',
-      text: 'Welcome to StadeX! ⚽ I am your multi-agent FIFA assistant. I can guide you through the gates, suggest fast paths based on live queue times, translate, or explain venue policies. How can I help you?',
+      text: 'Welcome to StadeX. I am your multi-agent FIFA venue assistant. I can guide you through the gates, suggest fast paths based on live queue times, translate, or explain venue policies. How can I assist you?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       agent: 'system'
     }
@@ -195,14 +195,14 @@ export default function App() {
       {/* Header */}
       <header className="border-b border-slate-800/80 px-6 py-4 bg-stadium-card/60 backdrop-blur-md sticky top-0 z-50 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center font-bold text-stadium-bg shadow-md shadow-cyan-500/20">
-            🏆
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center font-bold text-white shadow-md shadow-cyan-500/20">
+            <Compass size={20} />
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
               StadeX
             </h1>
-            <p className="text-xs text-slate-400 font-medium tracking-wide">FIFA WORLD CUP 2026 Operations</p>
+            <p className="text-xs text-slate-400 font-medium tracking-wide">FIFA WORLD CUP 2026 Venue Ops</p>
           </div>
         </div>
 
@@ -227,12 +227,12 @@ export default function App() {
                 onChange={(e) => setLanguage(e.target.value)}
                 className="bg-slate-900 border border-slate-700/80 text-slate-200 rounded-lg text-sm px-2.5 py-1 focus:outline-none focus:border-cyan-500 cursor-pointer font-medium"
               >
-                <option value="English">English 🇺🇸</option>
-                <option value="Spanish">Español 🇪🇸</option>
-                <option value="French">Français 🇫🇷</option>
-                <option value="Portuguese">Português 🇵🇹</option>
-                <option value="Mandarin">普通话 🇨🇳</option>
-                <option value="Arabic">العربية 🇸🇦</option>
+                <option value="English">English</option>
+                <option value="Spanish">Español</option>
+                <option value="French">Français</option>
+                <option value="Portuguese">Português</option>
+                <option value="Mandarin">普通话</option>
+                <option value="Arabic">العربية</option>
               </select>
             </div>
 

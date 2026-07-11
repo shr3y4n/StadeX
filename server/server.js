@@ -105,7 +105,7 @@ if (fs.existsSync(FAN_DIST)) {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 StadeX backend running on http://localhost:${PORT}`);
+  console.log(`StadeX backend running on http://localhost:${PORT}`);
   
   // Start simulation loop
   startSimulator();

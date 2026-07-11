@@ -4,7 +4,7 @@ $env:PATH = "C:\Program Files\nodejs;" + $env:PATH
 
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Magenta
-Write-Host "🚧 INITIATING PRODUCTION BUILD SEQUENCE 🚧" -ForegroundColor Yellow
+Write-Host "INITIATING PRODUCTION BUILD SEQUENCE" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Magenta
 
 # 1. Build Fan App
@@ -23,7 +23,7 @@ $env:PATH = "C:\Program Files\nodejs;" + $env:PATH
 cd ..
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Magenta
-Write-Host "🎉 PRODUCTION BUILD COMPLETED SUCCESSFULLY! 🎉" -ForegroundColor Green
+Write-Host "PRODUCTION BUILD COMPLETED SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Magenta
 Write-Host "All assets are now bundled inside the Express backend."
 Write-Host "To run the single-container production server:"
