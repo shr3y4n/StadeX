@@ -61,6 +61,11 @@ export const startSimulator = () => {
         const queueDelta = Math.floor(Math.random() * 3) - 1; // -1 to +1
         gate.queue_len_min = Math.max(1, expectedQueue + queueDelta);
 
+        // Calculate predictions (Feature 1: Queue Prediction Engine)
+        const trend = gate.occupancy_pct > 50 ? 1 : -1;
+        gate.predicted_15m = Math.max(10, Math.min(99, Math.round(gate.occupancy_pct + (trend * (Math.floor(Math.random() * 8) + 2)))));
+        gate.predicted_30m = Math.max(10, Math.min(99, Math.round(gate.predicted_15m + (trend * (Math.floor(Math.random() * 10) + 3)))));
+
         // Check if alert threshold is crossed (85%)
         if (gate.occupancy_pct >= 85) {
           const hasActiveAlert = alerts.some(a => a.gateId === gateId && !a.resolved);
@@ -92,4 +97,29 @@ export const startSimulator = () => {
       console.error('[Simulator Error]:', error);
     }
   }, 5000); // every 5 seconds
+};
+
+export const overrideGateStatus = (gateId, occupancy, queueLen) => {
+  try {
+    if (!fs.existsSync(STATUS_PATH)) return false;
+    const data = fs.readFileSync(STATUS_PATH, 'utf8');
+    const status = JSON.parse(data);
+    if (status[gateId]) {
+      status[gateId].occupancy_pct = occupancy;
+      status[gateId].queue_len_min = queueLen;
+      
+      const trend = occupancy > 50 ? 1 : -1;
+      status[gateId].predicted_15m = Math.max(10, Math.min(99, Math.round(occupancy + (trend * 5))));
+      status[gateId].predicted_30m = Math.max(10, Math.min(99, Math.round(status[gateId].predicted_15m + (trend * 8))));
+      
+      fs.writeFileSync(STATUS_PATH, JSON.stringify(status, null, 2), 'utf8');
+      
+      // Notify all status update listeners (SSE stream)
+      statusListeners.forEach(cb => cb(status));
+      return true;
+    }
+  } catch (error) {
+    console.error('[Simulator Override Error]:', error);
+  }
+  return false;
 };

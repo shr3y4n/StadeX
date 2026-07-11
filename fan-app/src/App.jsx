@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquare, Send, Mic, MicOff, Volume2, VolumeX, MapPin, 
-  AlertTriangle, Navigation, Clock, Shield, Compass, ChevronRight 
+  AlertTriangle, Navigation, Clock, Shield, Compass, ChevronRight, QrCode
 } from 'lucide-react';
 
 export default function App() {
@@ -22,6 +22,13 @@ export default function App() {
   const [recommendedGate, setRecommendedGate] = useState(null);
   const [selectedGate, setSelectedGate] = useState('C'); // Default selection
   const [gateStatuses, setGateStatuses] = useState({});
+  const [emergency, setEmergency] = useState({ active: false, type: null, timestamp: null, instructions: "" });
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isKioskMode, setIsKioskMode] = useState(false); // Live Multilingual Kiosk Mode
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // QR-based navigation simulation
+  const [scannedTicket, setScannedTicket] = useState(null);
+  const [isRerouted, setIsRerouted] = useState(false);
+  const [originalGate, setOriginalGate] = useState(null);
 
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -54,7 +61,19 @@ export default function App() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Set up EventSource for real-time gate status streaming
+  // Monitor online status (Feature 7: Offline mode)
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Set up EventSource for real-time gate status streaming & emergency broadcasts
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -62,22 +81,61 @@ export default function App() {
         if (res.ok) {
           const data = await res.json();
           setGateStatuses(data);
+          localStorage.setItem('gateStatuses', JSON.stringify(data));
         }
       } catch (err) {
-        console.error('Error fetching gate status:', err);
+        console.warn('Network issue fetching gate status, checking cache...', err);
+        const cached = localStorage.getItem('gateStatuses');
+        if (cached) {
+          setGateStatuses(JSON.parse(cached));
+        }
       }
     };
+
+    const fetchEmergency = async () => {
+      try {
+        const res = await fetch('/api/emergency');
+        if (res.ok) {
+          const data = await res.json();
+          setEmergency(data);
+        }
+      } catch (err) {
+        console.warn('Network issue fetching emergency, checking cache...');
+      }
+    };
+
     fetchStatus();
+    fetchEmergency();
 
     const eventSource = new EventSource('/api/gate-status/stream');
+    
     eventSource.onmessage = (event) => {
       try {
         const updatedStatus = JSON.parse(event.data);
         setGateStatuses(updatedStatus);
+        localStorage.setItem('gateStatuses', JSON.stringify(updatedStatus));
       } catch (err) {
         console.error('[SSE] Error parsing gate status stream data:', err);
       }
     };
+
+    // Listen for global emergency broadcasts (Feature 3: Emergency Mode)
+    eventSource.addEventListener('emergency', (event) => {
+      try {
+        const state = JSON.parse(event.data);
+        setEmergency(state);
+        if (state.active) {
+          // Play audio instructions immediately
+          window.speechSynthesis.cancel();
+          const speechText = `Attention! Emergency mode active. ${state.instructions}`;
+          const utterance = new SpeechSynthesisUtterance(speechText);
+          utterance.rate = 0.9;
+          window.speechSynthesis.speak(utterance);
+        }
+      } catch (err) {
+        console.error('[SSE] Error parsing emergency data:', err);
+      }
+    });
 
     eventSource.onerror = (err) => {
       console.warn('[SSE] EventSource connection encountered an error, closing.', err);
@@ -88,6 +146,19 @@ export default function App() {
       eventSource.close();
     };
   }, []);
+
+  // Ref to track kiosk mode inside speech event loops
+  const isKioskModeRef = useRef(isKioskMode);
+  useEffect(() => {
+    isKioskModeRef.current = isKioskMode;
+    if (isKioskMode && recognitionRef.current && !isListening) {
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.warn('Failed to start voice in kiosk mode:', err);
+      }
+    }
+  }, [isKioskMode]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -102,7 +173,6 @@ export default function App() {
       rec.continuous = false;
       rec.interimResults = false;
       
-      // Match language code
       const getLangCode = (name) => {
         switch(name) {
           case 'Spanish': return 'es-ES';
@@ -117,11 +187,27 @@ export default function App() {
       rec.lang = getLangCode(language);
 
       rec.onstart = () => setIsListening(true);
-      rec.onend = () => setIsListening(false);
+      rec.onend = () => {
+        setIsListening(false);
+        // Kiosk Mode automatic restart loop (Feature 4)
+        if (isKioskModeRef.current) {
+          setTimeout(() => {
+            try {
+              if (isKioskModeRef.current) {
+                rec.start();
+              }
+            } catch (err) {
+              console.log('Error restarting voice in Kiosk Mode:', err);
+            }
+          }, 1200);
+        }
+      };
+      
       rec.onerror = (e) => {
         console.error('Speech recognition error:', e);
         setIsListening(false);
       };
+      
       rec.onresult = (event) => {
         const text = event.results[0][0].transcript;
         setInputText(text);
@@ -214,10 +300,50 @@ export default function App() {
         speakText(data.reply, language);
       }
 
-      // Highlight recommended gate if returned
+      // Highlight recommended gate if returned & check for congestion overload (Feature 2: Auto Rerouting)
       if (data.data?.recommended_gate) {
-        setRecommendedGate(data.data.recommended_gate);
-        setSelectedGate(data.data.recommended_gate);
+        const targetGate = data.data.recommended_gate;
+        const gateStatus = gateStatuses[targetGate] || data.data.gateStatus?.[targetGate];
+        
+        if (gateStatus && gateStatus.occupancy_pct >= 80) {
+          // Find alternative gate with lowest occupancy under 60%
+          let altGate = null;
+          let lowestOccupancy = 100;
+          const statusSource = data.data.gateStatus || gateStatuses;
+          
+          Object.keys(statusSource).forEach(gId => {
+            if (statusSource[gId].occupancy_pct < lowestOccupancy && statusSource[gId].occupancy_pct < 60) {
+              lowestOccupancy = statusSource[gId].occupancy_pct;
+              altGate = gId;
+            }
+          });
+
+          if (altGate && altGate !== targetGate) {
+            setIsRerouted(true);
+            setOriginalGate(targetGate);
+            
+            // Append rerouting notice to bot message
+            const rerouteNotice = `\n\n⚠️ AUTO-REROUTE ACTIVE: Gate ${targetGate} is currently overloaded at ${gateStatus.occupancy_pct}% capacity. StadeX has automatically rerouted you to Gate ${altGate} (${lowestOccupancy}% capacity, ${statusSource[altGate].queue_len_min} min wait).`;
+            botMsg.text += rerouteNotice;
+            
+            // Update highlights
+            setRecommendedGate(altGate);
+            setSelectedGate(altGate);
+            
+            // Speak the updated response with warning
+            if (isSpeakEnabled) {
+              speakText(botMsg.text, language);
+            }
+          } else {
+            setIsRerouted(false);
+            setRecommendedGate(targetGate);
+            setSelectedGate(targetGate);
+          }
+        } else {
+          setIsRerouted(false);
+          setRecommendedGate(targetGate);
+          setSelectedGate(targetGate);
+        }
       }
     } catch (err) {
       console.error('Chat error:', err);
@@ -251,13 +377,45 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold animate-pulse-slow">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            Orchestrator Live
-          </span>
+        <div className="flex items-center gap-3">
+          {isOffline ? (
+            <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Offline Cache
+            </span>
+          ) : (
+            <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold animate-pulse-slow">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              Orchestrator Live
+            </span>
+          )}
         </div>
       </header>
+
+      {/* Emergency Mode Flashing Banner (Feature 3: Emergency Mode) */}
+      {emergency.active && (
+        <div className="bg-red-950/90 border-b border-red-500/40 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 animate-pulse shadow-lg shadow-red-500/10 z-40">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+              <AlertTriangle size={20} className="animate-bounce" />
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-red-400 uppercase tracking-widest">EMERGENCY ESCALATION ACTIVE ({emergency.type})</h2>
+              <p className="text-xs text-slate-100 font-bold leading-relaxed">{emergency.instructions}</p>
+            </div>
+          </div>
+          <span className="px-3 py-1.5 rounded bg-red-700 text-white text-[10px] font-black uppercase tracking-wider animate-bounce shrink-0">
+            Evacuate Closest Exit
+          </span>
+        </div>
+      )}
+
+      {/* Offline Mode Warning Strip (Feature 7: Offline Mode) */}
+      {isOffline && (
+        <div className="bg-amber-950/80 border-b border-amber-500/20 px-6 py-2 flex justify-center items-center gap-2 text-amber-400 text-xs font-semibold z-45">
+          <AlertTriangle size={14} /> Offline Mode Active — Displaying cached stadium telemetry and policies.
+        </div>
+      )}
 
       {/* Main Grid */}
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 overflow-hidden">
@@ -282,19 +440,43 @@ export default function App() {
               </select>
             </div>
 
-            <button
-              onClick={() => setIsSpeakEnabled(!isSpeakEnabled)}
-              title={isSpeakEnabled ? "Disable Read Aloud" : "Enable Read Aloud"}
-              aria-label={isSpeakEnabled ? "Disable voice output" : "Enable voice output"}
-              aria-pressed={isSpeakEnabled}
-              className={`p-2 rounded-lg transition-all border ${
-                isSpeakEnabled 
-                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 shadow-md' 
-                  : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {isSpeakEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Live Multilingual Kiosk Mode Toggle (Feature 4) */}
+              <button
+                onClick={() => {
+                  const targetKiosk = !isKioskMode;
+                  setIsKioskMode(targetKiosk);
+                  if (targetKiosk) {
+                    setIsSpeakEnabled(true);
+                  }
+                }}
+                title={isKioskMode ? "Exit hands-free Kiosk Mode" : "Enter hands-free Kiosk Mode"}
+                className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all ${
+                  isKioskMode 
+                    ? 'bg-cyan-600 border-cyan-400 text-white shadow shadow-cyan-500/20 animate-pulse-slow' 
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+                aria-label="Hands-free Kiosk Mode"
+                aria-pressed={isKioskMode}
+              >
+                Kiosk Mode
+              </button>
+
+              <button
+                onClick={() => setIsSpeakEnabled(!isSpeakEnabled)}
+                title={isSpeakEnabled ? "Disable Read Aloud" : "Enable Read Aloud"}
+                aria-label={isSpeakEnabled ? "Disable voice output" : "Enable voice output"}
+                aria-pressed={isSpeakEnabled}
+                disabled={isKioskMode} // forced active in Kiosk Mode
+                className={`p-2 rounded-lg transition-all border ${
+                  isSpeakEnabled 
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 shadow-md' 
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {isSpeakEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              </button>
+            </div>
           </div>
 
           {/* Messages list */}
@@ -350,6 +532,17 @@ export default function App() {
           {/* Chat input box */}
           <div className="p-4 border-t border-slate-800/80 bg-stadium-card/20">
             <div className="flex gap-2">
+              {/* QR Code Ticket Scan Button (Feature 9) */}
+              <button
+                onClick={() => setIsQRModalOpen(true)}
+                disabled={emergency.active} // disabled in emergency
+                className="p-3.5 rounded-xl bg-slate-900 border border-slate-800/80 text-slate-300 hover:border-slate-700 hover:text-slate-100 flex items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                title="Scan Ticket QR Code"
+                aria-label="Scan Ticket QR code"
+              >
+                <QrCode size={18} />
+              </button>
+
               <button
                 onClick={toggleListening}
                 className={`p-3.5 rounded-xl border flex items-center justify-center transition-all ${
@@ -632,6 +825,12 @@ export default function App() {
                    selectedGate === 'E' ? "VIP Gate — restricted entry, access to suites and executive lounge" :
                    "Media Gate — press badges and broadcasting crew entrance"}
                 </p>
+                
+                {/* Forecast predictions display (Feature 1: Queue Prediction Engine) */}
+                <div className="mt-2 flex gap-4 text-[10px] text-slate-500 font-medium">
+                  <span>Forecast (15m): <strong className="text-slate-300">{activeGateStatus.predicted_15m || Math.round(activeGateStatus.occupancy_pct * 1.1)}% capacity</strong></span>
+                  <span>Forecast (30m): <strong className="text-slate-300">{activeGateStatus.predicted_30m || Math.round(activeGateStatus.occupancy_pct * 1.25)}% capacity</strong></span>
+                </div>
               </div>
 
               <div className="flex gap-4 items-center">
@@ -668,6 +867,60 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {/* QR Ticket Scanner Simulation Modal (Feature 9: QR-based fan navigation) */}
+      {isQRModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+            <h3 className="text-base font-bold text-slate-200 mb-2 flex items-center gap-2">
+              <QrCode className="text-cyan-400" size={20} /> Simulate Ticket Scan
+            </h3>
+            <p className="text-xs text-slate-400 mb-4">
+              Scan a fan ticket QR code to auto-locate seating block and map the fastest route. Select a seat section below:
+            </p>
+
+            <div className="flex flex-col gap-2.5">
+              {[
+                { section: '108', gate: 'A', name: 'Section 108 (North Block)' },
+                { section: '205', gate: 'B', name: 'Section 205 (East Block)' },
+                { section: '124', gate: 'C', name: 'Section 124 (South Block)' },
+                { section: '228', gate: 'D', name: 'Section 228 (West Block)' },
+                { section: 'VIP Suite 12', gate: 'E', name: 'VIP Suite 12 (North West)' }
+              ].map((t) => (
+                <button
+                  key={t.section}
+                  onClick={() => {
+                    setScannedTicket(t);
+                    setIsQRModalOpen(false);
+                    setSelectedGate(t.gate);
+                    setRecommendedGate(t.gate);
+                    
+                    // Add system alert in chat feed
+                    setMessages(prev => [...prev, {
+                      id: Date.now(),
+                      sender: 'bot',
+                      text: `🎟️ [TICKET SCANNED]: Seat validated successfully at Section ${t.section}. We recommend entering via ${t.gate === 'A' ? 'Gate A (North)' : t.gate === 'B' ? 'Gate B (East)' : t.gate === 'C' ? 'Gate C (South)' : t.gate === 'D' ? 'Gate D (West)' : 'Gate E (VIP)'}. Map path is highlighted.`,
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      agent: 'system'
+                    }]);
+                  }}
+                  className="w-full text-left p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 transition-all text-xs font-semibold text-slate-200 flex justify-between items-center"
+                >
+                  <span>{t.name}</span>
+                  <ChevronRight size={14} className="text-slate-500" />
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setIsQRModalOpen(false)}
+              className="mt-5 w-full py-2.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition-colors text-xs font-bold"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { processMessage } from './orchestrator.js';
-import { startSimulator, getAlerts, resolveAlert, onStatusUpdate } from './simulator.js';
+import { startSimulator, getAlerts, resolveAlert, onStatusUpdate, overrideGateStatus } from './simulator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -124,6 +124,7 @@ app.get('/api/gate-status', (req, res) => {
 
 // 5. SSE Gate Status Stream (Real-Time push)
 let sseClients = [];
+let emergencyState = { active: false, type: null, timestamp: null, instructions: "" };
 
 app.get('/api/gate-status/stream', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
@@ -138,6 +139,10 @@ app.get('/api/gate-status/stream', (req, res) => {
       const rawData = fs.readFileSync(filePath, 'utf8');
       res.write(`data: ${rawData}\n\n`);
     }
+
+    // Send initial emergency status upon connection
+    res.write(`event: emergency\n`);
+    res.write(`data: ${JSON.stringify(emergencyState)}\n\n`);
   } catch (err) {
     console.error('[SSE] Initial state send error:', err);
   }
@@ -160,6 +165,52 @@ onStatusUpdate((status) => {
       console.error('[SSE] Error writing data to client:', e.message);
     }
   });
+});
+
+// 6. Emergency State Management (Feature 3: Emergency mode)
+app.get('/api/emergency', (req, res) => {
+  res.json(emergencyState);
+});
+
+app.post('/api/emergency/trigger', (req, res) => {
+  const { active, type, instructions } = req.body;
+  
+  emergencyState = {
+    active: !!active,
+    type: type || null,
+    instructions: instructions || "",
+    timestamp: active ? new Date().toISOString() : null
+  };
+
+  console.log(`[Emergency] Mode changed: ${JSON.stringify(emergencyState)}`);
+
+  // Broadcast emergency event to all SSE clients immediately
+  sseClients.forEach(client => {
+    try {
+      client.write(`event: emergency\n`);
+      client.write(`data: ${JSON.stringify(emergencyState)}\n\n`);
+    } catch (e) {
+      console.error('[SSE Emergency Broadcast Error]:', e.message);
+    }
+  });
+
+  res.json({ success: true, state: emergencyState });
+});
+
+// 7. Gate Status Manual Override (Feature 8: Admin simulation slider)
+app.post('/api/gate-status/override', (req, res) => {
+  const { gateId, occupancy_pct, queue_len_min } = req.body;
+  
+  if (!gateId || occupancy_pct === undefined || queue_len_min === undefined) {
+    return res.status(400).json({ error: 'gateId, occupancy_pct, and queue_len_min are required.' });
+  }
+
+  const success = overrideGateStatus(gateId, parseInt(occupancy_pct), parseInt(queue_len_min));
+  if (success) {
+    res.json({ success: true, message: `Gate ${gateId} status overridden successfully.` });
+  } else {
+    res.status(404).json({ error: `Gate ${gateId} override failed.` });
+  }
 });
 
 // Serve static frontend builds in production if they exist
