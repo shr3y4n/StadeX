@@ -1,0 +1,30 @@
+[
+  {
+    "category": "Bag Policy",
+    "rule": "Clear bags only. Maximum size is 12\" x 6\" x 12\" (30 x 15 x 30 cm). Small clutch bags or purses no larger than 4.5\" x 6.5\" are permitted and do not need to be clear."
+  },
+  {
+    "category": "Re-entry Policy",
+    "rule": "No re-entry. Once you scan your ticket and exit the stadium gates, you cannot re-enter using the same ticket under any circumstances."
+  },
+  {
+    "category": "Accessible Seating",
+    "rule": "Accessible seating options are available on all levels. ADA/accessible entry is recommended via Gate C (South) or Gate E (VIP), both of which feature direct elevator access."
+  },
+  {
+    "category": "Prohibited Items",
+    "rule": "Banned items include: professional camera rigs (lenses > 6 inches), lasers/laser pointers, weapons, explosives, flares, air horns, outside food & beverages, and flags/banners larger than 3' x 5'."
+  },
+  {
+    "category": "Lost and Found",
+    "rule": "Located at the Guest Services center on the main concourse behind Section 108. Post-event inquiries can be submitted via the official stadium email or website portal."
+  },
+  {
+    "category": "First Aid & Medical",
+    "rule": "First Aid stations are staffed by paramedics and located behind Section 112 (main concourse) and Section 224 (upper concourse)."
+  },
+  {
+    "category": "Child Stroller Policy",
+    "rule": "Strollers are allowed but must be checked in at the nearest Guest Services kiosk (behind Section 108 or Section 215) before entering the seating bowl."
+  }
+]

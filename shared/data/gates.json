@@ -1,0 +1,8 @@
+[
+  { "id": "A", "name": "Gate A - North", "capacity": 8000, "location": "Near main parking, closest to Sections 100-115" },
+  { "id": "B", "name": "Gate B - East", "capacity": 6000, "location": "Near metro exit, closest to Sections 200-215" },
+  { "id": "C", "name": "Gate C - South", "capacity": 7000, "location": "Near accessible parking, closest to Sections 116-130" },
+  { "id": "D", "name": "Gate D - West", "capacity": 6500, "location": "Near rideshare zone, closest to Sections 216-230" },
+  { "id": "E", "name": "Gate E - VIP (NW)", "capacity": 2000, "location": "Near Corporate suites and VIP Parking, closest to Section 100" },
+  { "id": "F", "name": "Gate F - Media (SE)", "capacity": 1500, "location": "Near Press & Broadcast hub, closest to Section 130" }
+]

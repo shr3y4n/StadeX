@@ -1,0 +1,26 @@
+{
+  "A": {
+    "occupancy_pct": 58,
+    "queue_len_min": 7
+  },
+  "B": {
+    "occupancy_pct": 48,
+    "queue_len_min": 7
+  },
+  "C": {
+    "occupancy_pct": 34,
+    "queue_len_min": 5
+  },
+  "D": {
+    "occupancy_pct": 67,
+    "queue_len_min": 7
+  },
+  "E": {
+    "occupancy_pct": 16,
+    "queue_len_min": 2
+  },
+  "F": {
+    "occupancy_pct": 36,
+    "queue_len_min": 6
+  }
+}

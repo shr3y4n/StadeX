@@ -1,0 +1,26 @@
+[
+  {
+    "id": "metro",
+    "name": "Metro Line 1 (Stadium Station)",
+    "type": "Metro",
+    "walk_time_min": 5,
+    "frequency_min": 4,
+    "description": "Direct express service to Downtown Hub and Airport. Highly recommended."
+  },
+  {
+    "id": "shuttle",
+    "name": "Express Stadium Shuttle",
+    "type": "Shuttle Bus",
+    "walk_time_min": 8,
+    "frequency_min": 10,
+    "description": "Complimentary shuttle to Park & Ride Lot 4."
+  },
+  {
+    "id": "rideshare",
+    "name": "Rideshare Hub (Lot G)",
+    "type": "Rideshare",
+    "walk_time_min": 12,
+    "frequency_min": 2,
+    "description": "Pick-up / Drop-off zone. Dynamic pricing and heavy traffic expected post-match."
+  }
+]
