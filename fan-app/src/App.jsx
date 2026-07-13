@@ -29,6 +29,7 @@ export default function App() {
   const [scannedTicket, setScannedTicket] = useState(null);
   const [isRerouted, setIsRerouted] = useState(false);
   const [originalGate, setOriginalGate] = useState(null);
+  const [accessibilityAnnouncement, setAccessibilityAnnouncement] = useState('');
 
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -124,7 +125,8 @@ export default function App() {
       try {
         const state = JSON.parse(event.data);
         setEmergency(state);
-        if (state.active) {
+        if (state?.active) {
+          setAccessibilityAnnouncement(`🚨 CRITICAL EMERGENCY ALERT BROADCASTED: ${state.type}. Instructions: ${state.instructions}`);
           // Play audio instructions immediately
           window.speechSynthesis.cancel();
           const speechText = `Attention! Emergency mode active. ${state.instructions}`;
@@ -294,6 +296,7 @@ export default function App() {
       };
 
       setMessages(prev => [...prev, botMsg]);
+      setAccessibilityAnnouncement(`AI Assistant reply: ${data.reply}`);
 
       // If voice enabled, speak the answer
       if (isSpeakEnabled) {
@@ -329,6 +332,8 @@ export default function App() {
             // Update highlights
             setRecommendedGate(altGate);
             setSelectedGate(altGate);
+            
+            setAccessibilityAnnouncement(`Warning: Auto-rerouting active. Gate ${targetGate} is overloaded. StadeX has automatically rerouted you to Gate ${altGate}.`);
             
             // Speak the updated response with warning
             if (isSpeakEnabled) {
@@ -480,7 +485,7 @@ export default function App() {
           </div>
 
           {/* Messages list */}
-          <div className="flex-1 p-5 overflow-y-auto space-y-4">
+          <div className="flex-1 p-5 overflow-y-auto space-y-4" aria-live="polite" aria-atomic="false">
             {messages.map((msg) => (
               <div 
                 key={msg.id}
@@ -598,6 +603,23 @@ export default function App() {
                 </button>
               )}
             </div>
+
+            {/* Plain-Language Text Fallback for Accessibility/Screen Readers (Hack2Skill Requirement) */}
+            {recommendedGate && (
+              <div className="mb-3 px-4 py-2.5 rounded-lg bg-cyan-950/20 border border-cyan-500/20 text-cyan-400 text-xs font-semibold flex items-center gap-2" role="status" aria-live="polite">
+                <Compass size={14} className="animate-spin-slow shrink-0" />
+                <span>
+                  <strong>Active Route:</strong> Head to Gate {recommendedGate} — approx. {
+                    recommendedGate === 'A' ? '50m, 2 min walk (North concourse)' :
+                    recommendedGate === 'B' ? '70m, 3 min walk (East concourse)' :
+                    recommendedGate === 'C' ? '40m, 2 min walk (South concourse - Accessible)' :
+                    recommendedGate === 'D' ? '60m, 3 min walk (West concourse)' :
+                    recommendedGate === 'E' ? '80m, 4 min walk (VIP entrance)' :
+                    '100m, 5 min walk (Press entrance)'
+                  }. {isRerouted ? 'Note: Automatically rerouted away from congestion.' : ''}
+                </span>
+              </div>
+            )}
 
             {/* SVG Stadium Map */}
             <div className="flex-1 flex items-center justify-center p-2 relative bg-slate-950/20 rounded-xl border border-slate-900/60">
@@ -921,6 +943,10 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* Hidden ARIA Live Announcer for Screen Readers (Accessibility compliance) */}
+      <div className="sr-only" aria-live="assertive" aria-atomic="true" role="alert">
+        {accessibilityAnnouncement}
+      </div>
     </div>
   );
 }

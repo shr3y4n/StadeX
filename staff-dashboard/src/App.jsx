@@ -12,6 +12,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('control'); // control, shifts, analytics, emergency, report
+  const [accessibilityAnnouncement, setAccessibilityAnnouncement] = useState('');
   const [emergency, setEmergency] = useState({ active: false, type: null, instructions: "" });
   const [historicalAlerts, setHistoricalAlerts] = useState([
     { id: 'h-1', gateId: 'A', message: 'Gate A occupancy spiked to 86%. Recommended opening auxiliary lane 2.', timestamp: new Date(Date.now() - 3600000).toISOString(), resolved: true, resolvedAt: new Date(Date.now() - 3400000).toISOString() },
@@ -94,6 +95,11 @@ export default function App() {
       try {
         const state = JSON.parse(event.data);
         setEmergency(state);
+        if (state?.active) {
+          setAccessibilityAnnouncement(`System alert: Emergency active - ${state.type}. Instructions: ${state.instructions}`);
+        } else {
+          setAccessibilityAnnouncement("System alert: All Clear issued. Nominal operations resumed.");
+        }
       } catch (err) {
         console.error('[SSE] Error parsing emergency event data:', err);
       }
@@ -105,12 +111,18 @@ export default function App() {
     };
 
     // 2. Poll alerts separately every 4 seconds to sync critical flags
+    let previousAlertCount = 0;
     const alertsInterval = setInterval(async () => {
       try {
         const alertsRes = await fetch('/api/staff-alerts');
         if (alertsRes.ok) {
           const alertsData = await alertsRes.json();
           setAlerts(alertsData);
+          if (alertsData.length > previousAlertCount) {
+            const newAlert = alertsData[alertsData.length - 1];
+            setAccessibilityAnnouncement(`System Alert: New congestion bottleneck detected at Gate ${newAlert.gateId}. ${newAlert.message}`);
+          }
+          previousAlertCount = alertsData.length;
         }
       } catch (err) {
         console.error('Error polling staff alerts:', err);
@@ -626,7 +638,7 @@ export default function App() {
                 <Clock className="text-rose-400" size={16} />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Active Incident SLA Timers</h3>
               </div>
-              <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+              <div className="flex-1 p-4 space-y-4 overflow-y-auto" aria-live="polite" aria-atomic="true">
                 {alerts.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
                     <CheckCircle className="text-emerald-500/60 mb-2" size={24} />
@@ -944,6 +956,10 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* Hidden ARIA Live Announcer for Screen Readers (Accessibility compliance) */}
+      <div className="sr-only" aria-live="assertive" aria-atomic="true" role="alert">
+        {accessibilityAnnouncement}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { getAlerts, resolveAlert } from '../simulator.js';
+import { getAlerts, resolveAlert, overrideGateStatus } from '../simulator.js';
 
 test('Simulator Alert Management tests', async (t) => {
 
@@ -24,6 +24,16 @@ test('Simulator Alert Management tests', async (t) => {
 
   await t.test('returns false for resolving non-existent alert ID', () => {
     const success = resolveAlert('non-existent-id-xyz');
+    assert.strictEqual(success, false);
+  });
+
+  await t.test('updates gate status override successfully for valid gate', () => {
+    const success = overrideGateStatus('A', 80, 15);
+    assert.strictEqual(success, true);
+  });
+
+  await t.test('returns false for invalid gate ID override', () => {
+    const success = overrideGateStatus('Z', 80, 15);
     assert.strictEqual(success, false);
   });
 });

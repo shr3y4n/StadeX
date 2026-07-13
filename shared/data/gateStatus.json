@@ -1,9 +1,9 @@
 {
   "A": {
-    "occupancy_pct": 68,
-    "queue_len_min": 10,
-    "predicted_15m": 76,
-    "predicted_30m": 86
+    "occupancy_pct": 80,
+    "queue_len_min": 15,
+    "predicted_15m": 85,
+    "predicted_30m": 93
   },
   "B": {
     "occupancy_pct": 99,
