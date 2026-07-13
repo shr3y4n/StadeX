@@ -25,7 +25,7 @@ test.describe('StadeX Golden Path and Accessibility Verification', () => {
     // Perform custom UI login
     await staffPage.fill('#login-username', 'shreyan');
     await staffPage.fill('#login-password', '1234');
-    await staffPage.click('#form-login button[type="submit"]');
+    await staffPage.click('#form-login-password button[type="submit"]');
     
     await expect(staffPage).toHaveTitle(/StadeX — Control Room/);
 
@@ -94,7 +94,7 @@ test.describe('StadeX Golden Path and Accessibility Verification', () => {
     // Perform custom UI login to get inside the dashboard
     await page.fill('#login-username', 'shreyan');
     await page.fill('#login-password', '1234');
-    await page.click('#form-login button[type="submit"]');
+    await page.click('#form-login-password button[type="submit"]');
     await expect(page).toHaveTitle(/StadeX — Control Room/);
 
     // Analyze the page with Axe

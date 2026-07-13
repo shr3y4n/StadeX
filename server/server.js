@@ -233,6 +233,80 @@ app.post('/api/auth/login', (req, res) => {
   }
 });
 
+// 3.5. SEND-LOGIN-OTP: takes contact (email/phone), checks if user exists, and returns mock OTP
+app.post('/api/auth/send-login-otp', (req, res) => {
+  const { contact } = req.body;
+  if (!contact) {
+    return res.status(400).json({ error: 'Email or Phone is required.' });
+  }
+
+  try {
+    const usersPath = path.join(__dirname, 'users.json');
+    if (!fs.existsSync(usersPath)) {
+      return res.status(500).json({ error: 'User database not configured.' });
+    }
+
+    const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+    const user = users.find(u => u.email === contact || u.phone === contact || u.username === contact);
+
+    if (!user) {
+      return res.status(404).json({ error: 'No registered account matches that Email or Phone.' });
+    }
+
+    // Generate random 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    pendingOtps[contact] = otp;
+
+    console.log(`\n==========================================================`);
+    console.log(`[AUTH] DEMO LOGIN OTP: Generated OTP for ${contact}`);
+    console.log(`[AUTH] MOCK OTP CODE: ${otp}`);
+    console.log(`==========================================================\n`);
+
+    res.json({ success: true, message: `OTP sent successfully to ${contact}.`, otp });
+  } catch (err) {
+    console.error('Send login OTP error:', err);
+    res.status(500).json({ error: 'Failed to send OTP.' });
+  }
+});
+
+// 3.6. LOGIN-OTP: verifies contact and OTP. Returns token.
+app.post('/api/auth/login-otp', (req, res) => {
+  const { contact, otp } = req.body;
+  if (!contact || !otp) {
+    return res.status(400).json({ error: 'Contact and OTP code are required.' });
+  }
+
+  const expectedOtp = pendingOtps[contact];
+  if (!expectedOtp || expectedOtp !== otp) {
+    return res.status(400).json({ error: 'Invalid or expired OTP.' });
+  }
+
+  // Clear OTP
+  delete pendingOtps[contact];
+
+  try {
+    const usersPath = path.join(__dirname, 'users.json');
+    if (!fs.existsSync(usersPath)) {
+      return res.status(500).json({ error: 'User database not configured.' });
+    }
+
+    const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+    const user = users.find(u => u.email === contact || u.phone === contact || u.username === contact);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    const token = Buffer.from(`${user.username}:${user.password}`).toString('base64');
+    activeSessions[token] = user.username;
+
+    res.json({ success: true, token, username: user.username });
+  } catch (err) {
+    console.error('OTP login error:', err);
+    res.status(500).json({ error: 'Failed to authenticate via OTP.' });
+  }
+});
+
 // Routes
 // 1. Chat endpoint (Public Fan Chat)
 app.post('/api/chat', validateChatInput, async (req, res) => {

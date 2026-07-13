@@ -19,6 +19,13 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authSuccessMsg, setAuthSuccessMsg] = useState('');
 
+  // OTP Login additional states
+  const [loginMethod, setLoginMethod] = useState('password'); // password, otp
+  const [loginOtpContact, setLoginOtpContact] = useState('');
+  const [loginOtpCode, setLoginOtpCode] = useState('');
+  const [isLoginOtpSent, setIsLoginOtpSent] = useState(false);
+  const [loginOtpIntercepted, setLoginOtpIntercepted] = useState('');
+
   const getAuthHeaders = () => {
     const token = localStorage.getItem('staffAuthToken');
     return token ? { 'Authorization': `Basic ${token}` } : {};
@@ -48,6 +55,69 @@ export default function App() {
     } catch (err) {
       console.error('Login request failed:', err);
       setAuthError('Network error. Is the server running?');
+    }
+  };
+
+  const handleSendLoginOtp = async (e) => {
+    if (e) e.preventDefault();
+    setAuthError('');
+    setAuthSuccessMsg('');
+
+    if (!loginOtpContact) {
+      setAuthError('Email or Phone contact info is required.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/send-login-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact: loginOtpContact })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setIsLoginOtpSent(true);
+        setLoginOtpIntercepted(data.otp);
+        setAuthSuccessMsg(`OTP sent successfully! Demo OTP code is: ${data.otp}`);
+      } else {
+        setAuthError(data.error || 'Failed to send OTP.');
+      }
+    } catch (err) {
+      console.error('Send login OTP error:', err);
+      setAuthError('Failed to send OTP. Server offline.');
+    }
+  };
+
+  const handleVerifyLoginOtp = async (e) => {
+    if (e) e.preventDefault();
+    setAuthError('');
+    setAuthSuccessMsg('');
+
+    if (!loginOtpCode) {
+      setAuthError('Please enter the 6-digit OTP code.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/login-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact: loginOtpContact, otp: loginOtpCode })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('staffAuthToken', data.token);
+        document.cookie = `staffAuthToken=${data.token}; path=/; max-age=86400;`;
+        setIsAuthenticated(true);
+        setAuthSuccessMsg('Logged in successfully via OTP!');
+      } else {
+        setAuthError(data.error || 'Invalid OTP verification code.');
+      }
+    } catch (err) {
+      console.error('OTP verification error:', err);
+      setAuthError('Verification request failed.');
     }
   };
 
@@ -125,6 +195,10 @@ export default function App() {
     setMockOtpReceived('');
     setAuthError('');
     setAuthSuccessMsg('');
+    setLoginOtpContact('');
+    setLoginOtpCode('');
+    setIsLoginOtpSent(false);
+    setLoginOtpIntercepted('');
   };
 
   const handleLogout = () => {
@@ -457,45 +531,125 @@ export default function App() {
 
           {/* Mode 1: Login Form */}
           {authMode === 'login' && (
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block" htmlFor="username">Username, Email, or Phone</label>
-                <input
-                  id="username"
-                  type="text"
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value)}
-                  required
-                  className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100 placeholder-slate-600 transition-colors"
-                  placeholder="Enter username"
-                />
+            <div className="space-y-5">
+              {/* Toggle Login Method */}
+              <div className="flex justify-center gap-6 border-b border-slate-800/80 pb-3 mb-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={loginMethod === 'password'}
+                    onChange={() => { setLoginMethod('password'); setAuthError(''); setAuthSuccessMsg(''); }}
+                    className="text-cyan-500 focus:ring-0"
+                  />
+                  Password Sign In
+                </label>
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={loginMethod === 'otp'}
+                    onChange={() => { setLoginMethod('otp'); setAuthError(''); setAuthSuccessMsg(''); }}
+                    className="text-cyan-500 focus:ring-0"
+                  />
+                  OTP Sign In
+                </label>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block" htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  required
-                  className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100 placeholder-slate-600 transition-colors"
-                  placeholder="••••••••"
-                />
-              </div>
+              {loginMethod === 'password' ? (
+                <form onSubmit={handleLogin} className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block" htmlFor="username">Username, Email, or Phone</label>
+                    <input
+                      id="username"
+                      type="text"
+                      value={usernameInput}
+                      onChange={(e) => setUsernameInput(e.target.value)}
+                      required
+                      className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100 placeholder-slate-600 transition-colors"
+                      placeholder="Enter username"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-cyan-600/10 transition-all hover:scale-[1.01] active:scale-[0.99] mt-2"
-              >
-                Sign In to System
-              </button>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block" htmlFor="password">Password</label>
+                    <input
+                      id="password"
+                      type="password"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      required
+                      className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100 placeholder-slate-600 transition-colors"
+                      placeholder="••••••••"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-cyan-600/10 transition-all hover:scale-[1.01] active:scale-[0.99] mt-2"
+                  >
+                    Sign In to System
+                  </button>
+                </form>
+              ) : (
+                <div className="space-y-5">
+                  {!isLoginOtpSent ? (
+                    <form onSubmit={handleSendLoginOtp} className="space-y-5">
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block" htmlFor="login-otp-contact">Email or Phone Number</label>
+                        <input
+                          id="login-otp-contact"
+                          type="text"
+                          value={loginOtpContact}
+                          onChange={(e) => setLoginOtpContact(e.target.value)}
+                          required
+                          className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100 placeholder-slate-600 transition-colors"
+                          placeholder="yourname@gmail.com or +123..."
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-cyan-600/10 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                      >
+                        Send Security OTP Code
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleVerifyLoginOtp} className="space-y-5">
+                      {loginOtpIntercepted && (
+                        <div className="p-4 rounded-xl bg-slate-950 border border-cyan-500/30 text-center relative overflow-hidden">
+                          <span className="text-[9px] uppercase font-bold text-cyan-400 tracking-widest block mb-1">Demo Telemetry (OTP Intercepted)</span>
+                          <span className="text-xl font-black text-cyan-400 tracking-wider font-mono">{loginOtpIntercepted}</span>
+                          <p className="text-[9px] text-slate-500 mt-1">Copy and paste this code to simulate email/SMS verification</p>
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block" htmlFor="login-otp-code">Enter 6-Digit OTP</label>
+                        <input
+                          id="login-otp-code"
+                          type="text"
+                          value={loginOtpCode}
+                          onChange={(e) => setLoginOtpCode(e.target.value)}
+                          required
+                          maxLength="6"
+                          className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100 placeholder-slate-600 transition-colors text-center tracking-widest font-mono"
+                          placeholder="000000"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-cyan-600/10 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                      >
+                        Verify OTP & Sign In
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
 
               <div className="text-center mt-6 pt-6 border-t border-slate-800/80">
                 <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Default Demo Credentials</span>
                 <code className="text-[11px] text-cyan-400 font-bold block mt-1.5 font-mono">shreyan / 1234</code>
               </div>
-            </form>
+            </div>
           )}
 
           {/* Mode 2: Signup Form */}

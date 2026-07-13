@@ -381,7 +381,18 @@
 
     <!-- Login View -->
     <div id="view-login">
-      <form id="form-login">
+      <!-- Toggle Login Method -->
+      <div class="radio-group" style="margin-bottom: 1.5rem; justify-content: center; gap: 2rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1rem;">
+        <label class="radio-label">
+          <input type="radio" id="login-method-password" name="login-method" value="password" checked> Password Sign In
+        </label>
+        <label class="radio-label">
+          <input type="radio" id="login-method-otp" name="login-method" value="otp"> OTP Sign In
+        </label>
+      </div>
+
+      <!-- Password Login Form -->
+      <form id="form-login-password">
         <div class="form-group">
           <label for="login-username">Username, Email, or Phone</label>
           <input type="text" id="login-username" required placeholder="Enter username">
@@ -392,6 +403,33 @@
         </div>
         <button type="submit" class="btn btn-cyan">Sign In to System</button>
       </form>
+
+      <!-- OTP Login Form -->
+      <form id="form-login-otp" style="display: none;">
+        <!-- Step 1: Send OTP -->
+        <div id="login-otp-init">
+          <div class="form-group">
+            <label for="login-otp-contact">Email or Phone Number</label>
+            <input type="text" id="login-otp-contact" required placeholder="yourname@gmail.com or +123...">
+          </div>
+          <button type="button" class="btn btn-cyan" id="btn-login-send-otp">Send Security OTP Code</button>
+        </div>
+
+        <!-- Step 2: Verify & Login -->
+        <div id="login-otp-verify" style="display: none; margin-top: 1rem;">
+          <div class="intercept-card" id="login-intercept-card" style="display: none;">
+            <div class="intercept-tag">DEMO TELEMETRY (OTP INTERCEPTED)</div>
+            <div class="intercept-code" id="login-intercept-code">000000</div>
+            <div class="intercept-desc">Copy and paste this code to simulate SMS/Email verification</div>
+          </div>
+          <div class="form-group">
+            <label for="login-otp-code">Enter 6-Digit OTP</label>
+            <input type="text" id="login-otp-code" placeholder="000000" maxlength="6" style="text-align: center; letter-spacing: 0.15em; font-family: 'JetBrains Mono', monospace;">
+          </div>
+          <button type="submit" class="btn btn-cyan">Verify OTP & Sign In</button>
+        </div>
+      </form>
+
       <div class="demo-info">
         <span class="demo-tag">Default Demo Credentials</span>
         <div class="demo-credentials">shreyan / 1234</div>
@@ -501,7 +539,7 @@
       }
     }
 
-    async function handleLogin(e) {
+    async function handleLoginPassword(e) {
       e.preventDefault();
       const username = document.getElementById('login-username').value;
       const password = document.getElementById('login-password').value;
@@ -518,7 +556,6 @@
         const data = await res.json();
         if (res.ok) {
           showNotify('Login successful! Redirecting...', false);
-          // Set cookie and local storage
           localStorage.setItem('staffAuthToken', data.token);
           document.cookie = `staffAuthToken=${data.token}; path=/; max-age=86400;`;
           
@@ -531,6 +568,79 @@
       } catch (err) {
         showNotify('Failed to communicate with server. Is it running?');
       }
+    }
+
+    async function handleSendLoginOtp() {
+      const contact = document.getElementById('login-otp-contact').value;
+      if (!contact) {
+        showNotify('Email or Phone number is required.');
+        return;
+      }
+
+      showNotify('', false);
+
+      try {
+        const res = await fetch('/api/auth/send-login-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contact })
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('login-otp-verify').style.display = 'block';
+          document.getElementById('login-intercept-code').innerText = data.otp;
+          document.getElementById('login-intercept-card').style.display = 'block';
+          showNotify('OTP sent successfully!', false);
+        } else {
+          showNotify(data.error || 'Failed to send OTP.');
+        }
+      } catch (err) {
+        showNotify('Failed to connect to server.');
+      }
+    }
+
+    async function handleLoginOtpSubmit(e) {
+      e.preventDefault();
+      const contact = document.getElementById('login-otp-contact').value;
+      const otp = document.getElementById('login-otp-code').value;
+
+      showNotify('', false);
+
+      try {
+        const res = await fetch('/api/auth/login-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contact, otp })
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+          showNotify('Login successful! Redirecting...', false);
+          localStorage.setItem('staffAuthToken', data.token);
+          document.cookie = `staffAuthToken=${data.token}; path=/; max-age=86400;`;
+          
+          setTimeout(() => {
+            window.location.href = '/staff/';
+          }, 800);
+        } else {
+          showNotify(data.error || 'Invalid OTP.');
+        }
+      } catch (err) {
+        showNotify('Failed to verify login OTP.');
+      }
+    }
+
+    function switchLoginMethod(method) {
+      if (method === 'password') {
+        document.getElementById('form-login-password').style.display = 'block';
+        document.getElementById('form-login-otp').style.display = 'none';
+      } else {
+        document.getElementById('form-login-password').style.display = 'none';
+        document.getElementById('form-login-otp').style.display = 'block';
+      }
+      document.getElementById('notify-box-error').style.display = 'none';
+      document.getElementById('notify-box-success').style.display = 'none';
     }
 
     async function handleSendOtp(e) {
@@ -614,7 +724,12 @@
       document.getElementById('tab-login').addEventListener('click', () => switchMode('login'));
       document.getElementById('tab-signup').addEventListener('click', () => switchMode('signup'));
       
-      document.getElementById('form-login').addEventListener('submit', handleLogin);
+      document.getElementById('login-method-password').addEventListener('change', () => switchLoginMethod('password'));
+      document.getElementById('login-method-otp').addEventListener('change', () => switchLoginMethod('otp'));
+      document.getElementById('btn-login-send-otp').addEventListener('click', handleSendLoginOtp);
+      document.getElementById('form-login-otp').addEventListener('submit', handleLoginOtpSubmit);
+      document.getElementById('form-login-password').addEventListener('submit', handleLoginPassword);
+
       document.getElementById('form-send-otp').addEventListener('submit', handleSendOtp);
       document.getElementById('form-verify-register').addEventListener('submit', handleVerifyOtpAndRegister);
       
