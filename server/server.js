@@ -307,6 +307,45 @@ app.post('/api/auth/login-otp', (req, res) => {
   }
 });
 
+// 3.7. GOOGLE-LOGIN: mocks a Google OAuth sign-in verification
+app.post('/api/auth/google-login', (req, res) => {
+  const { email, name, googleId } = req.body;
+  if (!email || !name) {
+    return res.status(400).json({ error: 'Google profile details are required.' });
+  }
+
+  try {
+    const usersPath = path.join(__dirname, 'users.json');
+    let users = [];
+    if (fs.existsSync(usersPath)) {
+      users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+    }
+
+    // Check if the user exists, or create a new user dynamically if this is their first Google Login
+    let user = users.find(u => u.email === email);
+    if (!user) {
+      user = {
+        username: email.split('@')[0],
+        password: `google_${googleId || 'oauth'}`,
+        email: email,
+        phone: null,
+        name: name,
+        avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`
+      };
+      users.push(user);
+      fs.writeFileSync(usersPath, JSON.stringify(users, null, 2), 'utf8');
+    }
+
+    const token = Buffer.from(`${user.username}:${user.password}`).toString('base64');
+    activeSessions[token] = user.username;
+
+    res.json({ success: true, token, username: user.username, name: user.name || name });
+  } catch (err) {
+    console.error('Google login error:', err);
+    res.status(500).json({ error: 'Failed to authenticate via Google.' });
+  }
+});
+
 // Routes
 // 1. Chat endpoint (Public Fan Chat)
 app.post('/api/chat', validateChatInput, async (req, res) => {
