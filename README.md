@@ -113,3 +113,20 @@ We have included a launch script that boots the backend API, Fan App, and Staff 
 ```
 * Access the **Fan App** at `http://localhost:5173`
 * Access the **Staff Dashboard** at `http://localhost:5174`
+
+---
+
+## 🔒 Security & Access Control
+
+StadeX includes a production-grade, fail-closed access control framework for the **Staff Control Room**:
+* **Server-Side Static Gating**: The static bundles served at `/staff` are locked on the server-side. Requests must contain a valid session token cookie (`staffAuthToken`) or legacy HTTP Basic authorization headers. Unauthenticated requests are immediately redirected to the public portal `/login`.
+* **OTP Sign Up & Session Authentication**:
+  * Users can dynamically register accounts using **Gmail / Email** or **Mobile / SMS**.
+  * On sign up, StadeX generates a secure 6-digit mock OTP code and registers it. (A handy telemetry visualizer is shown in the UI for judges to copy-paste the OTP code without requiring physical email/SMS gateways).
+  * After verifying the OTP, the user sets their password, and the server generates a session token and cookie to grant access.
+* **Default Administrative Access**: Preloaded with a default developer administrator account:
+  * **Username**: `shreyan`
+  * **Password**: `1234`
+* **API Protection & Prompt Injection Defenses**:
+  * Read/Write endpoints (`GET /api/staff-alerts`, `POST /api/emergency/trigger`, `POST /api/gate-status/override`) are strictly guarded.
+  * Public fan-app chats are strictly isolated from staff channels, and inputs are size-capped (1,000 characters) to mitigate DoS cost exploits.

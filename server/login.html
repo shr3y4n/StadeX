@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StadeX Control Room — Sign In</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --stadium-bg: #030712;
+      --stadium-card: rgba(17, 24, 39, 0.7);
+      --cyan-500: #06b6d4;
+      --rose-500: #f43f5e;
+      --emerald-500: #10b981;
+      --slate-400: #94a3b8;
+      --slate-600: #475569;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--stadium-bg);
+      color: #f3f4f6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Decorative blobs */
+    .blob-1 {
+      position: absolute;
+      top: 15%;
+      left: 15%;
+      width: 24rem;
+      height: 24rem;
+      border-radius: 50%;
+      background: rgba(6, 182, 212, 0.08);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .blob-2 {
+      position: absolute;
+      bottom: 15%;
+      right: 15%;
+      width: 24rem;
+      height: 24rem;
+      border-radius: 50%;
+      background: rgba(244, 63, 94, 0.08);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--stadium-card);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 1.5rem;
+      padding: 2.25rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--cyan-500), var(--rose-500), var(--emerald-500));
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .logo-container {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 1.25rem;
+      background: linear-gradient(135deg, #0891b2, #e11d48);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      box-shadow: 0 10px 20px rgba(6, 182, 212, 0.2);
+    }
+
+    .logo-icon {
+      font-size: 2rem;
+    }
+
+    .title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: -0.025em;
+      background: linear-gradient(90deg, #ffffff, #e2e8f0, #fda4af);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 0.75rem;
+      color: var(--slate-400);
+      margin-top: 0.25rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 0.25rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--slate-400);
+      padding: 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--cyan-500);
+      color: #ffffff;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--slate-400);
+      margin-bottom: 0.5rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="password"] {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.75rem;
+      padding: 0.8rem 1rem;
+      font-size: 0.875rem;
+      color: #f9fafb;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus {
+      border-color: var(--cyan-500);
+    }
+
+    /* Radio Group */
+    .radio-group {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #d1d5db;
+      cursor: pointer;
+    }
+
+    .radio-label input {
+      accent-color: var(--cyan-500);
+    }
+
+    /* Action Buttons */
+    .btn {
+      width: 100%;
+      padding: 0.9rem;
+      border-radius: 0.75rem;
+      border: none;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #ffffff;
+    }
+
+    .btn-cyan {
+      background: linear-gradient(90deg, #0891b2, #06b6d4);
+      box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+    }
+
+    .btn-cyan:hover {
+      background: linear-gradient(90deg, #06b6d4, #22d3ee);
+      transform: translateY(-1px);
+    }
+
+    .btn-rose {
+      background: linear-gradient(90deg, #e11d48, #f43f5e);
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.15);
+    }
+
+    .btn-rose:hover {
+      background: linear-gradient(90deg, #f43f5e, #fb7185);
+      transform: translateY(-1px);
+    }
+
+    .btn-emerald {
+      background: linear-gradient(90deg, #059669, #10b981);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+    }
+
+    .btn-emerald:hover {
+      background: linear-gradient(90deg, #10b981, #34d399);
+      transform: translateY(-1px);
+    }
+
+    .btn-link {
+      background: none;
+      border: none;
+      color: var(--slate-600);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: block;
+      margin: 1rem auto 0;
+      cursor: pointer;
+    }
+
+    .btn-link:hover {
+      color: var(--slate-400);
+    }
+
+    /* Notification Box */
+    .notify {
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    .notify-error {
+      background: rgba(127, 29, 29, 0.4);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .notify-success {
+      background: rgba(6, 78, 59, 0.4);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #a7f3d0;
+    }
+
+    /* Telemetry Intercept Box */
+    .intercept-card {
+      background: rgba(6, 182, 212, 0.05);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      border-radius: 0.75rem;
+      padding: 0.8rem;
+      text-align: center;
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    .intercept-tag {
+      font-size: 0.55rem;
+      font-weight: 800;
+      color: var(--cyan-500);
+      letter-spacing: 0.05em;
+    }
+
+    .intercept-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.2em;
+      margin: 0.25rem 0;
+    }
+
+    .intercept-desc {
+      font-size: 0.65rem;
+      color: var(--slate-400);
+    }
+
+    .demo-info {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-t: 1px solid rgba(255, 255, 255, 0.06);
+      text-align: center;
+    }
+
+    .demo-tag {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--slate-600);
+      letter-spacing: 0.05em;
+    }
+
+    .demo-credentials {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--cyan-500);
+      font-weight: 700;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="blob-1"></div>
+  <div class="blob-2"></div>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo-container">
+        <!-- SVG Shield Lock Icon -->
+        <svg class="logo-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check"><path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2A1 1 0 0 1 20 6z"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <h1 class="title">StadeX Control Room</h1>
+      <p class="subtitle">FIFA 2026 Operations Portal</p>
+    </div>
+
+    <!-- Toggle Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-login" onclick="switchMode('login')">Sign In</button>
+      <button class="tab-btn" id="tab-signup" onclick="switchMode('signup')">Sign Up (OTP)</button>
+    </div>
+
+    <!-- Feedback Notifications -->
+    <div class="notify notify-error" id="notify-box-error"></div>
+    <div class="notify notify-success" id="notify-box-success"></div>
+
+    <!-- Login View -->
+    <div id="view-login">
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="login-username">Username, Email, or Phone</label>
+          <input type="text" id="login-username" required placeholder="Enter username">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-cyan">Sign In to System</button>
+      </form>
+      <div class="demo-info">
+        <span class="demo-tag">Default Demo Credentials</span>
+        <div class="demo-credentials">shreyan / 1234</div>
+      </div>
+    </div>
+
+    <!-- Signup Form: Send OTP -->
+    <div id="view-signup-init" style="display: none;">
+      <form onsubmit="handleSendOtp(event)">
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="signup-type" value="email" checked onchange="switchSignupType('email')"> Gmail / Email
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="signup-type" value="phone" onchange="switchSignupType('phone')"> Mobile / SMS
+          </label>
+        </div>
+        <div class="form-group">
+          <label id="signup-contact-label" for="signup-contact">Gmail / Email Address</label>
+          <input type="text" id="signup-contact" required placeholder="yourname@gmail.com">
+        </div>
+        <button type="submit" class="btn btn-rose">Send Security OTP Code</button>
+      </form>
+    </div>
+
+    <!-- Signup Form: Verify OTP & Register -->
+    <div id="view-signup-verify" style="display: none;">
+      <div class="intercept-card" id="intercept-card">
+        <div class="intercept-tag">DEMO TELEMETRY (OTP INTERCEPTED)</div>
+        <div class="intercept-code" id="intercept-code">000000</div>
+        <div class="intercept-desc">Copy and paste this code to simulate SMS/Email verification</div>
+      </div>
+
+      <form onsubmit="handleVerifyOtpAndRegister(event)">
+        <div class="form-group">
+          <label for="signup-otp">Enter OTP Code</label>
+          <input type="text" id="signup-otp" required placeholder="000000" maxlength="6" style="text-align: center; letter-spacing: 0.15em; font-family: 'JetBrains Mono', monospace;">
+        </div>
+        <div class="form-group">
+          <label for="signup-username-create">Choose Username</label>
+          <input type="text" id="signup-username-create" required placeholder="e.g. janesecurity">
+        </div>
+        <div class="form-group">
+          <label for="signup-password-create">Create Password</label>
+          <input type="password" id="signup-password-create" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-emerald">Verify OTP & Register</button>
+        <button type="button" class="btn-link" onclick="backToSignupInit()">← Back to edit contact</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let activeMode = 'login';
+    let signupType = 'email';
+    let signupContactValue = '';
+    let mockOtpReceived = '';
+
+    function showNotify(msg, isError = true) {
+      const errBox = document.getElementById('notify-box-error');
+      const succBox = document.getElementById('notify-box-success');
+      
+      errBox.style.display = 'none';
+      succBox.style.display = 'none';
+      
+      if (isError) {
+        errBox.innerText = msg;
+        errBox.style.display = 'block';
+      } else {
+        succBox.innerText = msg;
+        succBox.style.display = 'block';
+      }
+    }
+
+    function switchMode(mode) {
+      activeMode = mode;
+      document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+      document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
+      
+      document.getElementById('notify-box-error').style.display = 'none';
+      document.getElementById('notify-box-success').style.display = 'none';
+      
+      if (mode === 'login') {
+        document.getElementById('view-login').style.display = 'block';
+        document.getElementById('view-signup-init').style.display = 'none';
+        document.getElementById('view-signup-verify').style.display = 'none';
+      } else {
+        document.getElementById('view-login').style.display = 'none';
+        document.getElementById('view-signup-init').style.display = 'block';
+        document.getElementById('view-signup-verify').style.display = 'none';
+      }
+    }
+
+    function switchSignupType(type) {
+      signupType = type;
+      const contactLabel = document.getElementById('signup-contact-label');
+      const contactInput = document.getElementById('signup-contact');
+      
+      if (type === 'email') {
+        contactLabel.innerText = 'Gmail / Email Address';
+        contactInput.placeholder = 'yourname@gmail.com';
+        contactInput.type = 'email';
+      } else {
+        contactLabel.innerText = 'Phone Number (with country code)';
+        contactInput.placeholder = '+1 555-0199';
+        contactInput.type = 'tel';
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+      
+      showNotify('', false);
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+          showNotify('Login successful! Redirecting...', false);
+          // Set cookie and local storage
+          localStorage.setItem('staffAuthToken', data.token);
+          document.cookie = `staffAuthToken=${data.token}; path=/; max-age=86400;`;
+          
+          setTimeout(() => {
+            window.location.href = '/staff/';
+          }, 800);
+        } else {
+          showNotify(data.error || 'Invalid credentials.');
+        }
+      } catch (err) {
+        showNotify('Failed to communicate with server. Is it running?');
+      }
+    }
+
+    async function handleSendOtp(e) {
+      e.preventDefault();
+      signupContactValue = document.getElementById('signup-contact').value;
+      
+      const payload = signupType === 'email' 
+        ? { email: signupContactValue }
+        : { phone: signupContactValue };
+
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+          mockOtpReceived = data.otp;
+          document.getElementById('intercept-code').innerText = data.otp;
+          document.getElementById('intercept-card').style.display = 'block';
+          
+          document.getElementById('view-signup-init').style.display = 'none';
+          document.getElementById('view-signup-verify').style.display = 'block';
+          showNotify('OTP sent successfully!', false);
+        } else {
+          showNotify(data.error || 'Failed to trigger OTP.');
+        }
+      } catch (err) {
+        showNotify('Failed to connect to server.');
+      }
+    }
+
+    async function handleVerifyOtpAndRegister(e) {
+      e.preventDefault();
+      const otp = document.getElementById('signup-otp').value;
+      const username = document.getElementById('signup-username-create').value;
+      const password = document.getElementById('signup-password-create').value;
+      
+      const payload = {
+        otp,
+        username,
+        password,
+        ...(signupType === 'email' ? { email: signupContactValue } : { phone: signupContactValue })
+      };
+
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+          showNotify('Registration successful! Redirecting to Control Room...', false);
+          localStorage.setItem('staffAuthToken', data.token);
+          document.cookie = `staffAuthToken=${data.token}; path=/; max-age=86400;`;
+          
+          setTimeout(() => {
+            window.location.href = '/staff/';
+          }, 800);
+        } else {
+          showNotify(data.error || 'OTP verification failed.');
+        }
+      } catch (err) {
+        showNotify('Failed to verify OTP.');
+      }
+    }
+
+    function backToSignupInit() {
+      document.getElementById('view-signup-init').style.display = 'block';
+      document.getElementById('view-signup-verify').style.display = 'none';
+      document.getElementById('notify-box-error').style.display = 'none';
+      document.getElementById('notify-box-success').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

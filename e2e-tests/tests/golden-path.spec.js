@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 // Helper to base64 encode auth header if STAFF credentials are set
-const authHeader = 'Basic ' + Buffer.from('admin:stadex2026').toString('base64');
+const authHeader = 'Basic ' + Buffer.from('shreyan:1234').toString('base64');
 
 test.describe('StadeX Golden Path and Accessibility Verification', () => {
   

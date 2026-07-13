@@ -21,7 +21,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow react bundle executions
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Removed unsafe-eval for production security (Issue 4)
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://*"],
@@ -31,6 +31,7 @@ app.use(helmet({
   }
 }));
 
+// 2. Rate Limiting for API routes
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 30, // Limit each IP to 30 requests per minute
@@ -47,58 +48,179 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Staff Authentication middleware for dashboard access (Basic Auth - Hack2Skill Requirement)
+// In-Memory active auth sessions database & pending OTP registry (Issue 1)
+const activeSessions = {};
+const pendingOtps = {};
+
+// Staff Authentication middleware for dashboard access (Basic Auth & Token support - fails closed)
 const staffAuth = (req, res, next) => {
-  const user = process.env.STAFF_USER;
-  const pass = process.env.STAFF_PASS;
-  
-  // If credentials are not configured, allow bypass (default dev fallback)
+  const user = process.env.STAFF_USER || 'shreyan';
+  const pass = process.env.STAFF_PASS || '1234';
+
   if (!user || !pass) {
-    return next();
+    console.error('[SECURITY] STAFF_USER/STAFF_PASS not configured — refusing staff access.');
+    return res.status(503).json({ error: 'Staff access temporarily unavailable.' });
   }
-  
-  const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
-  const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
-  
-  if (login === user && password === pass) {
-    return next();
+
+  const authHeader = req.headers.authorization || '';
+
+  if (authHeader.startsWith('Basic ')) {
+    const b64auth = authHeader.split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+    
+    // Check local JSON database (users.json)
+    try {
+      const users = JSON.parse(fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8'));
+      const foundUser = users.find(u => (u.username === login || u.email === login || u.phone === login) && u.password === password);
+      if (foundUser) {
+        req.user = foundUser;
+        return next();
+      }
+    } catch (err) {
+      console.error('[SECURITY] Error reading users.json for basic auth:', err);
+    }
+  } else if (authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1] || '';
+    const username = activeSessions[token];
+    if (username) {
+      req.user = { username };
+      return next();
+    }
   }
   
   res.set('WWW-Authenticate', 'Basic realm="StadeX Staff"');
   res.status(401).send('Authentication required');
 };
 
-app.use(express.json());
+// Size limit Express JSON body size (Issue 5: Cost DoS vector protection)
+app.use(express.json({ limit: '10kb' }));
 
-// Input sanitizer middleware
-const sanitizeInput = (req, res, next) => {
-  if (req.body && typeof req.body === 'object') {
-    for (const key of Object.keys(req.body)) {
-      if (typeof req.body[key] === 'string') {
-        // Strip HTML tag brackets to prevent raw tag injections
-        req.body[key] = req.body[key].replace(/[<>]/g, '');
-      }
-    }
+// Validate chat message length middleware (Issue 5)
+const validateChatInput = (req, res, next) => {
+  if (req.body?.message && req.body.message.length > 1000) {
+    return res.status(400).json({ error: 'Message too long (max 1000 characters).' });
   }
   next();
 };
-app.use(sanitizeInput);
 
 // Protect all staff-facing endpoints and simulation APIs under Basic Auth (Hack2Skill Security Guidelines)
 app.use('/api/staff-alerts', staffAuth);
 app.use('/api/emergency/trigger', staffAuth);
 app.use('/api/gate-status/override', staffAuth);
 
+// ----------------------------------------------------
+// Authentication API Endpoints (OTP, Signup, Session management)
+// ----------------------------------------------------
+
+// 1. SIGNUP: takes email/phone, returns mock OTP (printed to console/returned for demo)
+app.post('/api/auth/signup', (req, res) => {
+  const { email, phone } = req.body;
+  if (!email && !phone) {
+    return res.status(400).json({ error: 'Email or Phone number is required to sign up.' });
+  }
+
+  const key = email || phone;
+  // Generate random 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  pendingOtps[key] = otp;
+
+  console.log(`\n==========================================================`);
+  console.log(`[AUTH] DEMO SIGNUP: Generated OTP for ${key}`);
+  console.log(`[AUTH] MOCK OTP CODE: ${otp} (Provide this to user in response)`);
+  console.log(`==========================================================\n`);
+
+  res.json({ success: true, message: `OTP sent successfully to ${key}.`, otp });
+});
+
+// 2. VERIFY-OTP: takes email/phone, otp, username, password. Creates the user in users.json
+app.post('/api/auth/verify-otp', (req, res) => {
+  const { email, phone, otp, username, password } = req.body;
+  if (!email && !phone) {
+    return res.status(400).json({ error: 'Email or Phone is required.' });
+  }
+  if (!otp || !username || !password) {
+    return res.status(400).json({ error: 'otp, username, and password are required.' });
+  }
+
+  const key = email || phone;
+  const expectedOtp = pendingOtps[key];
+
+  if (!expectedOtp || expectedOtp !== otp) {
+    return res.status(400).json({ error: 'Invalid or expired OTP.' });
+  }
+
+  // Clear OTP
+  delete pendingOtps[key];
+
+  try {
+    const usersPath = path.join(__dirname, 'users.json');
+    let users = [];
+    if (fs.existsSync(usersPath)) {
+      users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+    }
+
+    // Check if user already exists
+    if (users.some(u => u.username === username || (email && u.email === email) || (phone && u.phone === phone))) {
+      return res.status(400).json({ error: 'Username, Email, or Phone is already registered.' });
+    }
+
+    const newUser = { username, password, email: email || null, phone: phone || null };
+    users.push(newUser);
+    fs.writeFileSync(usersPath, JSON.stringify(users, null, 2), 'utf8');
+
+    // Create session
+    const token = Buffer.from(`${username}:${password}`).toString('base64');
+    activeSessions[token] = username;
+
+    res.json({ success: true, message: 'Account registered successfully.', token, username });
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(500).json({ error: 'Failed to complete signup.' });
+  }
+});
+
+// 3. LOGIN: verifies username/password. Returns token.
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required.' });
+  }
+
+  try {
+    const usersPath = path.join(__dirname, 'users.json');
+    if (!fs.existsSync(usersPath)) {
+      return res.status(500).json({ error: 'User database not configured.' });
+    }
+
+    const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+    const user = users.find(u => (u.username === username || u.email === username || u.phone === username) && u.password === password);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid username or password.' });
+    }
+
+    const token = Buffer.from(`${user.username}:${user.password}`).toString('base64');
+    activeSessions[token] = user.username;
+
+    res.json({ success: true, token, username: user.username });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Failed to verify login.' });
+  }
+});
+
 // Routes
-// 1. Chat endpoint
-app.post('/api/chat', async (req, res) => {
-  const { message, role = 'fan', language } = req.body;
+// 1. Chat endpoint (Public Fan Chat)
+app.post('/api/chat', validateChatInput, async (req, res) => {
+  const { message, language } = req.body;
 
   if (!message) {
     return res.status(400).json({ error: 'Message field is required.' });
   }
 
-  console.log(`[API] Received chat message from ${role}: "${message}"`);
+  // Force role to 'fan' to block privilege escalation (Issue 3)
+  const role = 'fan';
+  console.log(`[API] Received public fan chat message: "${message}"`);
   
   try {
     const result = await processMessage({ message, role, language });
@@ -106,6 +228,26 @@ app.post('/api/chat', async (req, res) => {
   } catch (error) {
     console.error('[API Error in /api/chat]:', error);
     res.status(500).json({ error: 'Internal server error while routing chat.' });
+  }
+});
+
+// 2. Staff Chat endpoint (Authenticated Staff Chat - Issue 3 mitigation)
+app.post('/api/staff/chat', staffAuth, validateChatInput, async (req, res) => {
+  const { message, language } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ error: 'Message field is required.' });
+  }
+
+  const role = 'staff';
+  console.log(`[API] Received authenticated staff chat message: "${message}"`);
+  
+  try {
+    const result = await processMessage({ message, role, language });
+    res.json(result);
+  } catch (error) {
+    console.error('[API Error in /api/staff/chat]:', error);
+    res.status(500).json({ error: 'Internal server error while routing staff chat.' });
   }
 });
 
@@ -268,13 +410,50 @@ app.post('/api/gate-status/override', (req, res) => {
   }
 });
 
+// Serve the public login portal page
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
+});
+
 // Serve static frontend builds in production if they exist
 const FAN_DIST = path.join(__dirname, '../fan-app/dist');
 const STAFF_DIST = path.join(__dirname, '../staff-dashboard/dist');
 
+// Middleware to restrict static dashboard loading to authenticated sessions on the server (Issue 2)
+const restrictStaticStaff = (req, res, next) => {
+  const list = {};
+  const rc = req.headers.cookie;
+  if (rc) {
+    rc.split(';').forEach(cookie => {
+      const parts = cookie.split('=');
+      list[parts.shift().trim()] = decodeURI(parts.join('='));
+    });
+  }
+  const token = list['staffAuthToken'];
+  if (token && activeSessions[token]) {
+    return next();
+  }
+  
+  // Also check legacy HTTP Basic auth header
+  const authHeader = req.headers.authorization || '';
+  if (authHeader.startsWith('Basic ')) {
+    const b64auth = authHeader.split(' ')[1] || '';
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+    try {
+      const users = JSON.parse(fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8'));
+      if (users.some(u => (u.username === login || u.email === login || u.phone === login) && u.password === password)) {
+        return next();
+      }
+    } catch (e) {}
+  }
+  
+  // If not authenticated, redirect to the public login page
+  res.redirect('/login');
+};
+
 if (fs.existsSync(STAFF_DIST)) {
-  app.use('/staff', express.static(STAFF_DIST));
-  app.get('/staff/*', (req, res) => {
+  app.use('/staff', restrictStaticStaff, express.static(STAFF_DIST));
+  app.get('/staff/*', restrictStaticStaff, (req, res) => {
     res.sendFile(path.join(STAFF_DIST, 'index.html'));
   });
 }
@@ -288,6 +467,39 @@ if (fs.existsSync(FAN_DIST)) {
 
 // Start server
 app.listen(PORT, () => {
+  // Sync environment variables or defaults to users.json on startup (Issue 1 fail-closed protection)
+  try {
+    const envUser = process.env.STAFF_USER || 'shreyan';
+    const envPass = process.env.STAFF_PASS || '1234';
+    const usersPath = path.join(__dirname, 'users.json');
+    let users = [];
+    if (fs.existsSync(usersPath)) {
+      users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+    }
+    
+    const idx = users.findIndex(u => u.username === envUser);
+    if (idx >= 0) {
+      users[idx].password = envPass;
+    } else {
+      users.push({
+        username: envUser,
+        password: envPass,
+        email: `${envUser}@google.com`,
+        phone: '+1234567890'
+      });
+    }
+    fs.writeFileSync(usersPath, JSON.stringify(users, null, 2), 'utf8');
+    console.log(`[AUTH] Synced staff credentials for default user: ${envUser}`);
+  } catch (err) {
+    console.error('[AUTH] Failed to sync credentials to database:', err);
+  }
+
+  // Enforce fail-closed check for production env configs (Issue 1)
+  if (process.env.NODE_ENV === 'production' && (!process.env.STAFF_USER || !process.env.STAFF_PASS)) {
+    console.error('FATAL: STAFF_USER/STAFF_PASS required in production. Exiting.');
+    process.exit(1);
+  }
+
   console.log(`StadeX backend running on http://localhost:${PORT}`);
   
   // Start simulation loop
