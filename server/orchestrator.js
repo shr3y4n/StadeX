@@ -285,8 +285,14 @@ ${sanitizedUserMessage}
 
 // Main routing function
 export const processMessage = async ({ message, role = 'fan', language }) => {
+  if (message === undefined || message === null) {
+    throw new Error('Message field is required.');
+  }
+  if (typeof message !== 'string') {
+    throw new Error('Message must be a string.');
+  }
   // Sanitize and cap message length (Issue 4 & 5 protection at orchestrator layer)
-  const sanitizedMessage = String(message || '').replace(/---/g, '').slice(0, 1000);
+  const sanitizedMessage = message.replace(/---/g, '').slice(0, 1000);
 
   // If no Claude API key, use mock responder
   if (!anthropic) {

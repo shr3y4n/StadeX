@@ -308,6 +308,8 @@ app.post('/api/staff-alerts/resolve', (req, res) => {
 });
 
 // 4. Live gate statuses endpoint (GET status)
+// DESIGN CHOICE: Public access is deliberate so the Fan App can fetch current telemetry data
+// to perform local routing predictions. Secured against abuse via the apiLimiter rate-limiter.
 app.get('/api/gate-status', (req, res) => {
   try {
     const filePath = path.join(DATA_DIR, 'gateStatus.json');
@@ -323,10 +325,12 @@ app.get('/api/gate-status', (req, res) => {
   }
 });
 
-// 5. SSE Gate Status Stream (Real-Time push)
 let sseClients = [];
 let emergencyState = { active: false, type: null, timestamp: null, instructions: "" };
 
+// 5. SSE Gate Status Stream (Real-Time push)
+// DESIGN CHOICE: Public access is deliberate so the Fan App can listen to live updates 
+// of gate wait-times and emergency broadcasts. Abuse is mitigated via apiLimiter.
 app.get('/api/gate-status/stream', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
