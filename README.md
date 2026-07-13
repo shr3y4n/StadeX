@@ -116,17 +116,30 @@ We have included a launch script that boots the backend API, Fan App, and Staff 
 
 ---
 
-## 🔒 Security & Access Control
+## 🔒 Security, Access Control & Compliance
 
 StadeX includes a production-grade, fail-closed access control framework for the **Staff Control Room**:
-* **Server-Side Static Gating**: The static bundles served at `/staff` are locked on the server-side. Requests must contain a valid session token cookie (`staffAuthToken`) or legacy HTTP Basic authorization headers. Unauthenticated requests are immediately redirected to the public portal `/login`.
-* **OTP Sign Up & Session Authentication**:
-  * Users can dynamically register accounts using **Gmail / Email** or **Mobile / SMS**.
-  * On sign up, StadeX generates a secure 6-digit mock OTP code and registers it. (A handy telemetry visualizer is shown in the UI for judges to copy-paste the OTP code without requiring physical email/SMS gateways).
-  * After verifying the OTP, the user sets their password, and the server generates a session token and cookie to grant access.
-* **Default Administrative Access**: Preloaded with a default developer administrator account:
-  * **Username**: `shreyan`
-  * **Password**: `1234`
-* **API Protection & Prompt Injection Defenses**:
-  * Read/Write endpoints (`GET /api/staff-alerts`, `POST /api/emergency/trigger`, `POST /api/gate-status/override`) are strictly guarded.
-  * Public fan-app chats are strictly isolated from staff channels, and inputs are size-capped (1,000 characters) to mitigate DoS cost exploits.
+* **Server-Side Static Gating**: The static React bundles served at `/staff` are locked on the server. Requests must contain a valid session token cookie (`staffAuthToken`) or Basic authorization headers. Unauthenticated requests are immediately redirected to `/login`.
+* **Flexible Multi-Method Authentication**:
+  * **Password Sign In**: Authenticate using standard credentials (default developer admin account preloaded: `shreyan` / `1234`).
+  * **OTP Sign In (Existing Users)**: Request and verify a mock 6-digit OTP code sent via verified **Gmail / Email** or **Mobile / SMS** contact records to log in securely without a password.
+  * **OTP Sign Up (Create Account)**: Verify a mock OTP code, choose a username, and register password credentials. A handy telemetry panel intercepts and displays the mock OTP code for seamless judge testing.
+* **Helmet Content Security Policy (CSP) Compliance**:
+  * Configured strict `Helmet` headers. Banned `'unsafe-eval'` and inline scripts.
+  * Removed all inline event handlers (`onclick`, `onchange`, `onsubmit`) from login pages and programmatically bound them using `addEventListener` at `DOMContentLoaded` to respect Helmet's `script-src-attr 'none'` rule.
+* **API Protection & DoS Prevention**:
+  * Enforced global size limits (`10kb`) on incoming JSON payloads and strict input length checks (max 1,000 characters) on API routes.
+  * Restricts origin access via strict CORS rules.
+  * Protects AI prompts against hijack injections using system-level tool call allowlists.
+
+---
+
+## ♿ WCAG 2.1 Accessibility & Testing
+
+* **100% Passed Axe Audits**: The Fan App, public Login portal, and Staff Control Room have been audited using `@axe-core/playwright` and achieved **zero critical or serious accessibility violations**.
+* **Key Accessibility Features**:
+  * **Screen Reader Support**: Integrated ARIA-Live regions (`aria-live="polite"`, `aria-atomic`) that instantly announce new messages and operational alarms to visually impaired users.
+  * **Form Accessibility**: Properly labeled all input controls, including adding unique `aria-label` tags to manual occupancy simulation sliders.
+  * **Text Alternative for Maps**: Explains routes in plain text next to SVG maps so fans get directions regardless of SVG rendering or network issues.
+* **Automated E2E Test Suite**:
+  * Verified via Playwright integration tests simulating a complete golden path flow (Ticket scanning $\rightarrow$ Gate congestion $\rightarrow$ Auto-rerouting $\rightarrow$ Staff SLA alert dispatches $\rightarrow$ SLA resolving). Pushes are audited automatically via GitHub Actions CI (`.github/workflows/test.yml`).
