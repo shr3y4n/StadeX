@@ -6,6 +6,45 @@ import {
 } from 'lucide-react';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('staffAuthToken'));
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('staffAuthToken');
+    return token ? { 'Authorization': `Basic ${token}` } : {};
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    const token = btoa(`${usernameInput}:${passwordInput}`);
+    try {
+      const res = await fetch('/api/staff-alerts', {
+        headers: { 'Authorization': `Basic ${token}` }
+      });
+      if (res.ok) {
+        localStorage.setItem('staffAuthToken', token);
+        setIsAuthenticated(true);
+      } else if (res.status === 401) {
+        setLoginError('Invalid username or password.');
+      } else {
+        setLoginError('Server authentication failed.');
+      }
+    } catch (err) {
+      console.error('Login request failed:', err);
+      setLoginError('Network error. Is the server running?');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('staffAuthToken');
+    setIsAuthenticated(false);
+    setUsernameInput('');
+    setPasswordInput('');
+  };
+
   const [gateStatus, setGateStatus] = useState({});
   const [alerts, setAlerts] = useState([]);
   const [gatesInfo, setGatesInfo] = useState([]);
@@ -32,14 +71,22 @@ export default function App() {
     setIsRefreshing(true);
     try {
       // 1. Fetch gate status
-      const statusRes = await fetch('/api/gate-status');
+      const statusRes = await fetch('/api/gate-status', { headers: getAuthHeaders() });
+      if (statusRes.status === 401) {
+        handleLogout();
+        return;
+      }
       if (statusRes.ok) {
         const statusData = await statusRes.json();
         setGateStatus(statusData);
       }
 
       // 2. Fetch staff alerts
-      const alertsRes = await fetch('/api/staff-alerts');
+      const alertsRes = await fetch('/api/staff-alerts', { headers: getAuthHeaders() });
+      if (alertsRes.status === 401) {
+        handleLogout();
+        return;
+      }
       if (alertsRes.ok) {
         const alertsData = await alertsRes.json();
         setAlerts(alertsData);
@@ -47,7 +94,11 @@ export default function App() {
 
       // 4. Fetch emergency status
       try {
-        const emergencyRes = await fetch('/api/emergency');
+        const emergencyRes = await fetch('/api/emergency', { headers: getAuthHeaders() });
+        if (emergencyRes.status === 401) {
+          handleLogout();
+          return;
+        }
         if (emergencyRes.ok) {
           const emergencyData = await emergencyRes.json();
           setEmergency(emergencyData);
@@ -114,7 +165,11 @@ export default function App() {
     let previousAlertCount = 0;
     const alertsInterval = setInterval(async () => {
       try {
-        const alertsRes = await fetch('/api/staff-alerts');
+        const alertsRes = await fetch('/api/staff-alerts', { headers: getAuthHeaders() });
+        if (alertsRes.status === 401) {
+          handleLogout();
+          return;
+        }
         if (alertsRes.ok) {
           const alertsData = await alertsRes.json();
           setAlerts(alertsData);
@@ -139,9 +194,16 @@ export default function App() {
     try {
       const res = await fetch('/api/staff-alerts/resolve', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ id: alertId })
       });
+      if (res.status === 401) {
+        handleLogout();
+        return;
+      }
       if (res.ok) {
         // Move to historical list for analytics (Feature 6 & 10)
         const resolvedAlert = alerts.find(a => a.id === alertId);
@@ -164,9 +226,16 @@ export default function App() {
     try {
       const res = await fetch('/api/emergency/trigger', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ active, type, instructions })
       });
+      if (res.status === 401) {
+        handleLogout();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setEmergency(data.state);
@@ -189,15 +258,22 @@ export default function App() {
     }));
 
     try {
-      await fetch('/api/gate-status/override', {
+      const res = await fetch('/api/gate-status/override', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           gateId,
           occupancy_pct: parseInt(val),
           queue_len_min: Math.max(1, Math.round(val / 8))
         })
       });
+      if (res.status === 401) {
+        handleLogout();
+        return;
+      }
     } catch (err) {
       console.error('Error overriding status:', err);
     }
@@ -234,6 +310,76 @@ export default function App() {
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-stadium-bg text-slate-100 flex items-center justify-center p-4">
+        {/* Neon decorative background blobs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
+        
+        <div className="w-full max-w-md glass-card rounded-3xl border border-slate-800 p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-rose-500 to-emerald-500"></div>
+          
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-600 to-rose-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-500/15">
+              <Shield size={32} className="text-white" />
+            </div>
+            <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-rose-400 bg-clip-text text-transparent">
+              StadeX Control Room
+            </h1>
+            <p className="text-xs text-slate-400 mt-2 font-semibold">FIFA 2026 Operations & Security Portal</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            {loginError && (
+              <div className="px-4 py-3 rounded-xl bg-red-950/40 border border-red-500/30 text-red-400 text-xs font-semibold text-center animate-pulse">
+                {loginError}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block" htmlFor="username">Username</label>
+              <input
+                id="username"
+                type="text"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                required
+                className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100 placeholder-slate-600 transition-colors"
+                placeholder="Enter staff username"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block" htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                required
+                className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 text-slate-100 placeholder-slate-600 transition-colors"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-cyan-600/10 transition-all hover:scale-[1.01] active:scale-[0.99] mt-2"
+            >
+              Sign In to System
+            </button>
+          </form>
+
+          <div className="text-center mt-6 pt-6 border-t border-slate-800/80">
+            <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Demo Access Credentials</span>
+            <code className="text-[11px] text-cyan-400 font-bold block mt-1.5 font-mono">admin / stadex2026</code>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-stadium-bg text-slate-100 flex flex-col">
       {/* Header */}
@@ -263,6 +409,13 @@ export default function App() {
             className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center"
           >
             <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
+          <button 
+            onClick={handleLogout}
+            aria-label="Sign out from StadeX console"
+            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs font-bold text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all flex items-center gap-1.5"
+          >
+            Sign Out
           </button>
         </div>
       </header>

@@ -273,8 +273,8 @@ const FAN_DIST = path.join(__dirname, '../fan-app/dist');
 const STAFF_DIST = path.join(__dirname, '../staff-dashboard/dist');
 
 if (fs.existsSync(STAFF_DIST)) {
-  app.use('/staff', staffAuth, express.static(STAFF_DIST));
-  app.get('/staff/*', staffAuth, (req, res) => {
+  app.use('/staff', express.static(STAFF_DIST));
+  app.get('/staff/*', (req, res) => {
     res.sendFile(path.join(STAFF_DIST, 'index.html'));
   });
 }
