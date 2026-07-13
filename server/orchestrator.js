@@ -278,16 +278,19 @@ ${sanitizedUserMessage}
     max_tokens: 300,
     system: secureSystemPrompt,
     messages: [{ role: 'user', content: promptContent }]
-  });
+  }, { timeout: 10000 });
 
   return response.content[0].text;
 };
 
 // Main routing function
 export const processMessage = async ({ message, role = 'fan', language }) => {
+  // Sanitize and cap message length (Issue 4 & 5 protection at orchestrator layer)
+  const sanitizedMessage = String(message || '').replace(/---/g, '').slice(0, 1000);
+
   // If no Claude API key, use mock responder
   if (!anthropic) {
-    return handleMockRouting(message, role, language);
+    return handleMockRouting(sanitizedMessage, role, language);
   }
 
   try {
@@ -298,7 +301,7 @@ export const processMessage = async ({ message, role = 'fan', language }) => {
 
     const fullContext = { gates, gateStatus, transit, policies };
 
-    // Orchestrator Tool Definitions
+    // ... define tools ...
     const tools = [
       {
         name: 'navigation_agent',
@@ -336,21 +339,21 @@ export const processMessage = async ({ message, role = 'fan', language }) => {
       }
     ];
 
-    // First call to the Orchestrator
+    // First call to the Orchestrator with 10-second timeout configuration (Issue 6)
     const orchestratorResponse = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 150,
       system: ORCHESTRATOR_SYSTEM,
-      messages: [{ role: 'user', content: message }],
+      messages: [{ role: 'user', content: sanitizedMessage }],
       tools: tools,
       tool_choice: { type: 'any' } // Force calling at least one routing tool
-    });
+    }, { timeout: 10000 });
 
     const toolCall = orchestratorResponse.content.find(c => c.type === 'tool_use');
 
     if (!toolCall) {
       console.warn('Orchestrator did not return a tool call, falling back to mock router');
-      return handleMockRouting(message, role, language);
+      return handleMockRouting(sanitizedMessage, role, language);
     }
 
     const { name: toolName, input: toolInput } = toolCall;
@@ -360,7 +363,7 @@ export const processMessage = async ({ message, role = 'fan', language }) => {
     const approvedTools = ['navigation_agent', 'crowd_agent', 'language_agent'];
     if (!approvedTools.includes(toolName)) {
       console.warn(`[Security Alert] Orchestrator attempted to call unauthorized tool: ${toolName}`);
-      return handleMockRouting(message, role, language);
+      return handleMockRouting(sanitizedMessage, role, language);
     }
 
     let agentResponseText = '';
@@ -368,7 +371,7 @@ export const processMessage = async ({ message, role = 'fan', language }) => {
     if (toolName === 'navigation_agent') {
       agentResponseText = await callAgent(
         NAVIGATION_SYSTEM,
-        toolInput.query || message,
+        toolInput.query || sanitizedMessage,
         { gates, gateStatus, policies }
       );
 
@@ -399,7 +402,7 @@ export const processMessage = async ({ message, role = 'fan', language }) => {
     } else if (toolName === 'crowd_agent') {
       agentResponseText = await callAgent(
         CROWD_SYSTEM + `\nCurrently acting in: ${role.toUpperCase()} MODE.`,
-        toolInput.query || message,
+        toolInput.query || sanitizedMessage,
         { gateStatus, gates }
       );
 
@@ -419,7 +422,7 @@ export const processMessage = async ({ message, role = 'fan', language }) => {
       // Ground the language agent with all stadium data so it can answer correctly
       agentResponseText = await callAgent(
         LANGUAGE_SYSTEM + `\nTarget Language: ${toolInput.target_language || language || 'auto-detect'}`,
-        toolInput.query || message,
+        toolInput.query || sanitizedMessage,
         fullContext
       );
 
@@ -437,10 +440,10 @@ export const processMessage = async ({ message, role = 'fan', language }) => {
       };
     }
 
-    return handleMockRouting(message, role, language);
+    return handleMockRouting(sanitizedMessage, role, language);
   } catch (error) {
     console.error('Error in orchestrator processing, falling back to Mock Mode:', error);
-    return handleMockRouting(message, role, language);
+    return handleMockRouting(sanitizedMessage, role, language);
   }
 };
 

@@ -54,12 +54,29 @@ const pendingOtps = {};
 
 // Staff Authentication middleware for dashboard access (Basic Auth & Token support - fails closed)
 const staffAuth = (req, res, next) => {
-  const user = process.env.STAFF_USER || 'shreyan';
-  const pass = process.env.STAFF_PASS || '1234';
+  const user = process.env.STAFF_USER || (process.env.NODE_ENV !== 'production' ? 'shreyan' : undefined);
+  const pass = process.env.STAFF_PASS || (process.env.NODE_ENV !== 'production' ? '1234' : undefined);
 
   if (!user || !pass) {
     console.error('[SECURITY] STAFF_USER/STAFF_PASS not configured — refusing staff access.');
     return res.status(503).json({ error: 'Staff access temporarily unavailable.' });
+  }
+
+  // Also check session cookie 'staffAuthToken' (for AJAX requests from the staff dashboard)
+  let token = undefined;
+  const rc = req.headers.cookie;
+  if (rc) {
+    const list = {};
+    rc.split(';').forEach(cookie => {
+      const parts = cookie.split('=');
+      list[parts.shift().trim()] = decodeURI(parts.join('='));
+    });
+    token = list['staffAuthToken'];
+  }
+  
+  if (token && activeSessions[token]) {
+    req.user = { username: activeSessions[token] };
+    return next();
   }
 
   const authHeader = req.headers.authorization || '';
@@ -95,9 +112,16 @@ const staffAuth = (req, res, next) => {
 // Size limit Express JSON body size (Issue 5: Cost DoS vector protection)
 app.use(express.json({ limit: '10kb' }));
 
-// Validate chat message length middleware (Issue 5)
+// Validate chat message type and length middleware (Issue 4 & 5)
 const validateChatInput = (req, res, next) => {
-  if (req.body?.message && req.body.message.length > 1000) {
+  const { message } = req.body;
+  if (message === undefined || message === null) {
+    return res.status(400).json({ error: 'Message field is required.' });
+  }
+  if (typeof message !== 'string') {
+    return res.status(400).json({ error: 'Message must be a string.' });
+  }
+  if (message.length > 1000) {
     return res.status(400).json({ error: 'Message too long (max 1000 characters).' });
   }
   next();

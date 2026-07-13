@@ -114,6 +114,23 @@ export const overrideGateStatus = (gateId, occupancy, queueLen) => {
       
       fs.writeFileSync(STATUS_PATH, JSON.stringify(status, null, 2), 'utf8');
       
+      // If critical threshold reached, trigger immediate alert generation (bypass 5s poll lag for E2E tests)
+      if (occupancy >= 85) {
+        if (!alerts.some(a => a.gateId === gateId && !a.resolved)) {
+          generateStaffAlert(gateId, occupancy, queueLen).then(alertText => {
+            alerts.push({
+              id: Date.now() + Math.random(),
+              gateId,
+              message: alertText,
+              timestamp: new Date().toISOString(),
+              resolved: false
+            });
+          }).catch(err => {
+            console.error('Failed to generate staff alert instantly:', err);
+          });
+        }
+      }
+
       // Notify all status update listeners (SSE stream)
       statusListeners.forEach(cb => cb(status));
       return true;

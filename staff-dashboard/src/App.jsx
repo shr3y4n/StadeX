@@ -271,7 +271,7 @@ export default function App() {
       } catch (err) {
         console.error('Error polling staff alerts:', err);
       }
-    }, 4000);
+    }, 1000);
 
     return () => {
       eventSource.close();
@@ -492,7 +492,7 @@ export default function App() {
               </button>
 
               <div className="text-center mt-6 pt-6 border-t border-slate-800/80">
-                <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Default Demo Credentials</span>
+                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Default Demo Credentials</span>
                 <code className="text-[11px] text-cyan-400 font-bold block mt-1.5 font-mono">shreyan / 1234</code>
               </div>
             </form>
@@ -606,7 +606,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setIsOtpSent(false)}
-                    className="w-full text-center text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300 mt-2 block"
+                    className="w-full text-center text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-300 mt-2 block"
                   >
                     ← Back to edit Email/Phone
                   </button>
@@ -709,7 +709,7 @@ export default function App() {
             <div className="glass-card rounded-xl p-3 flex items-center justify-between shadow-lg">
               <div>
                 <span className="text-[9px] text-slate-400 uppercase font-semibold tracking-wider block">Live Flow</span>
-                <h3 className="text-lg font-black text-white mt-0.5">{calculatedFlow.toLocaleString()} <span className="text-[10px] text-slate-500 font-normal">fans</span></h3>
+                <h3 className="text-lg font-black text-white mt-0.5">{calculatedFlow.toLocaleString()} <span className="text-[10px] text-slate-400 font-normal">fans</span></h3>
               </div>
               <div className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
                 <Users size={16} />
@@ -720,7 +720,7 @@ export default function App() {
             <div className="glass-card rounded-xl p-3 flex items-center justify-between shadow-lg">
               <div>
                 <span className="text-[9px] text-slate-400 uppercase font-semibold tracking-wider block">Avg Wait</span>
-                <h3 className="text-lg font-black text-white mt-0.5">{avgWaitTime} <span className="text-[10px] text-slate-500 font-normal">mins</span></h3>
+                <h3 className="text-lg font-black text-white mt-0.5">{avgWaitTime} <span className="text-[10px] text-slate-400 font-normal">mins</span></h3>
               </div>
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
                 <Clock size={16} />
@@ -753,7 +753,7 @@ export default function App() {
             <div className="glass-card rounded-xl p-3 flex items-center justify-between shadow-lg">
               <div>
                 <span className="text-[9px] text-slate-400 uppercase font-semibold tracking-wider block">Active Alerts</span>
-                <h3 className="text-lg font-black text-rose-400 mt-0.5">{alerts.length} <span className="text-[10px] text-slate-500 font-normal">live</span></h3>
+                <h3 className="text-lg font-black text-rose-400 mt-0.5">{alerts.length} <span className="text-[10px] text-slate-400 font-normal">live</span></h3>
               </div>
               <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
                 <AlertOctagon size={16} />
@@ -780,7 +780,7 @@ export default function App() {
                 <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                   <BarChart2 size={16} /> Live Gate Grid Telemetry & Overrides
                 </h2>
-                <span className="text-xs text-slate-500 font-medium">Drag sliders to manually override gate capacity</span>
+                <span className="text-xs text-slate-400 font-medium">Drag sliders to manually override gate capacity</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -818,7 +818,7 @@ export default function App() {
                         </div>
 
                         <div className="text-right">
-                          <span className="text-[9px] text-slate-500 font-semibold uppercase">Queue Time</span>
+                          <span className="text-[9px] text-slate-400 font-semibold uppercase">Queue Time</span>
                           <span className={`block text-xl font-black ${
                             isOverloaded ? 'text-red-400' :
                             isWarning ? 'text-amber-400' : 'text-emerald-400'
@@ -850,20 +850,20 @@ export default function App() {
                       </div>
 
                       {/* Queue Predictions Forecast (Feature 1) */}
-                      <div className="mt-3 bg-slate-950/40 p-2 rounded border border-slate-800/40 flex justify-between text-[9px] text-slate-500 font-semibold uppercase tracking-wider">
+                      <div className="mt-3 bg-slate-950/40 p-2 rounded border border-slate-800/40 flex justify-between text-[9px] text-slate-400 font-semibold uppercase tracking-wider">
                         <span>15m Forecast: <strong className="text-slate-300 font-black">{status.predicted_15m || Math.round(status.occupancy_pct * 1.15)}%</strong></span>
                         <span>30m Forecast: <strong className="text-slate-300 font-black">{status.predicted_30m || Math.round(status.occupancy_pct * 1.25)}%</strong></span>
                       </div>
 
                       {/* Quick Details */}
-                      <div className="mt-3 pt-2 border-t border-slate-800/60 flex justify-between items-center text-[10px] text-slate-500 font-medium">
+                      <div className="mt-3 pt-2 border-t border-slate-800/60 flex justify-between items-center text-[10px] text-slate-400 font-medium">
                         <span>CAP: {gate.capacity.toLocaleString()}</span>
                         <span>FLOW: {Math.round(gate.capacity * (status.occupancy_pct / 100)).toLocaleString()}</span>
                       </div>
 
                       {/* Manual Simulation Override Slider (Feature 8: Admin simulation slider) */}
                       <div className="mt-3 pt-2 border-t border-slate-800/50">
-                        <div className="flex justify-between items-center text-[9px] text-slate-500 font-bold mb-1 uppercase tracking-wider">
+                        <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold mb-1 uppercase tracking-wider">
                           <span>Override Slider</span>
                           <span className="text-rose-400">{status.occupancy_pct}%</span>
                         </div>
@@ -873,6 +873,7 @@ export default function App() {
                           max="99"
                           value={status.occupancy_pct}
                           onChange={(e) => handleSliderOverride(gate.id, e.target.value)}
+                          aria-label={`Override occupancy for Gate ${gate.id}`}
                           className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-rose-500 focus:outline-none"
                         />
                       </div>
@@ -899,7 +900,7 @@ export default function App() {
                   <div className="h-full flex flex-col items-center justify-center text-center p-6">
                     <CheckCircle className="text-emerald-500 mb-2" size={32} />
                     <h4 className="text-sm font-semibold text-slate-300">All Gates Nominal</h4>
-                    <p className="text-xs text-slate-500 max-w-[200px] mt-1">No operational bottlenecks detected in the stadium area.</p>
+                    <p className="text-xs text-slate-400 max-w-[200px] mt-1">No operational bottlenecks detected in the stadium area.</p>
                   </div>
                 ) : (
                   alerts.map((alert) => (
@@ -914,7 +915,7 @@ export default function App() {
                           <ShieldAlert size={16} className="text-rose-400" />
                           <span className="text-[10px] uppercase font-black text-rose-400 tracking-wider">Gate {alert.gateId} Critical</span>
                         </div>
-                        <span className="text-[9px] text-slate-500 font-light">
+                        <span className="text-[9px] text-slate-400 font-light">
                           {new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </span>
                       </div>
@@ -1032,10 +1033,10 @@ export default function App() {
               </div>
               <div className="flex-1 p-4 space-y-4 overflow-y-auto" aria-live="polite" aria-atomic="true">
                 {alerts.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
                     <CheckCircle className="text-emerald-500/60 mb-2" size={24} />
                     <span className="text-xs font-bold">All Incidents Cleared</span>
-                    <span className="text-[10px] text-slate-600 mt-0.5">SLA responses are within nominal limits (under 3 min).</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">SLA responses are within nominal limits (under 3 min).</span>
                   </div>
                 ) : (
                   alerts.map((alert) => {
@@ -1075,7 +1076,7 @@ export default function App() {
               {alerts.map((a) => (
                 <div key={a.id} className="p-2.5 rounded bg-rose-950/15 border border-rose-500/20 flex justify-between items-center text-rose-300 font-mono">
                   <span>[DISPATCHED] AI Alert issued for Gate {a.gateId} | Assigned Lead: {shiftAssignments[a.gateId]?.leader || "Officer"}</span>
-                  <span className="text-[10px] text-slate-500">{new Date(a.timestamp).toLocaleTimeString()}</span>
+                  <span className="text-[10px] text-slate-400">{new Date(a.timestamp).toLocaleTimeString()}</span>
                 </div>
               ))}
               {/* Resolved Alerts Audit */}
@@ -1086,14 +1087,14 @@ export default function App() {
                 return (
                   <div key={h.id} className="p-2.5 rounded bg-emerald-950/15 border border-emerald-500/20 flex justify-between items-center text-emerald-300 font-mono">
                     <span>[RESOLVED] Incident resolved by Lead Officer {shiftAssignments[h.gateId]?.leader || "Officer"} at Gate {h.gateId} | Response SLA: {diffMin}m {diffSec}s</span>
-                    <span className="text-[10px] text-slate-500">{new Date(h.resolvedAt).toLocaleTimeString()}</span>
+                    <span className="text-[10px] text-slate-400">{new Date(h.resolvedAt).toLocaleTimeString()}</span>
                   </div>
                 );
               })}
               {/* Standard Check-in */}
               <div className="p-2.5 rounded bg-slate-950/40 border border-slate-800/60 flex justify-between items-center text-slate-400 font-mono">
                 <span>[CHECK-IN] Nominal operations check-in. All 6 gate nodes transmitting SSE status packages.</span>
-                <span className="text-[10px] text-slate-600">{new Date(Date.now() - 7200000).toLocaleTimeString()}</span>
+                <span className="text-[10px] text-slate-400">{new Date(Date.now() - 7200000).toLocaleTimeString()}</span>
               </div>
             </div>
           </div>
@@ -1130,7 +1131,7 @@ export default function App() {
                       }`}
                       style={{ height: `${item.flow * 1.5}px` }}
                     ></div>
-                    <span className="text-[8px] text-slate-500 font-bold tracking-tight whitespace-nowrap">{item.hour}</span>
+                    <span className="text-[8px] text-slate-400 font-bold tracking-tight whitespace-nowrap">{item.hour}</span>
                   </div>
                 ))}
               </div>
@@ -1165,14 +1166,14 @@ export default function App() {
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-300">SLA Response Performance</h3>
               <div className="grid grid-cols-2 gap-4 mt-2">
                 <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/40 text-center">
-                  <span className="block text-[9px] text-slate-500 uppercase font-bold tracking-wider">Avg Incident Resolve Time</span>
+                  <span className="block text-[9px] text-slate-400 uppercase font-bold tracking-wider">Avg Incident Resolve Time</span>
                   <span className="text-2xl font-black text-white block mt-1">2m 42s</span>
                   <span className="text-[9px] text-emerald-400 font-semibold">Under 3m SLA Limit</span>
                 </div>
                 <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/40 text-center">
-                  <span className="block text-[9px] text-slate-500 uppercase font-bold tracking-wider">Total Alerts Resolved Today</span>
+                  <span className="block text-[9px] text-slate-400 uppercase font-bold tracking-wider">Total Alerts Resolved Today</span>
                   <span className="text-2xl font-black text-rose-400 block mt-1">{historicalAlerts.length} incidents</span>
-                  <span className="text-[9px] text-slate-500 font-medium">100% resolution rate</span>
+                  <span className="text-[9px] text-slate-400 font-medium">100% resolution rate</span>
                 </div>
               </div>
             </div>
@@ -1185,9 +1186,9 @@ export default function App() {
                   <div key={h.id} className="p-2.5 rounded bg-slate-950/60 border border-slate-800/50 flex justify-between items-center">
                     <div>
                       <span className="font-bold text-slate-300 uppercase mr-2">[Resolved] Gate {h.gateId}</span>
-                      <span className="text-slate-500 italic">"{h.message.substring(0, 45)}..."</span>
+                      <span className="text-slate-400 italic">"{h.message.substring(0, 45)}..."</span>
                     </div>
-                    <span className="text-slate-500">{new Date(h.resolvedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-slate-400">{new Date(h.resolvedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 ))}
               </div>
@@ -1258,7 +1259,7 @@ export default function App() {
                     <>
                       <Shield className="text-emerald-500 mb-2" size={36} />
                       <h4 className="text-sm font-bold text-slate-200">System Secure & Nominal</h4>
-                      <p className="text-xs text-slate-500 mt-1 max-w-[200px]">No active broadcast triggers. All fan kiosks are operating in nominal navigation mode.</p>
+                      <p className="text-xs text-slate-400 mt-1 max-w-[200px]">No active broadcast triggers. All fan kiosks are operating in nominal navigation mode.</p>
                     </>
                   )}
                 </div>
@@ -1292,7 +1293,7 @@ export default function App() {
                 <h1 className="text-2xl font-black tracking-tight text-white print:text-black">StadeX OPERATIONS</h1>
                 <p className="text-xs font-bold text-rose-400 uppercase tracking-widest mt-1 print:text-black">FIFA World Cup 2026 Venue Report</p>
               </div>
-              <div className="text-right text-[10px] text-slate-500 font-sans print:text-black">
+              <div className="text-right text-[10px] text-slate-400 font-sans print:text-black">
                 <span>DATE: {new Date().toLocaleDateString()}</span>
                 <span className="block">VENUE: Stadium-B Concourse (Live Feed)</span>
               </div>

@@ -255,6 +255,40 @@ export default function App() {
     window.speechSynthesis.speak(utterance);
   };
 
+  // Watch for selected gate changes to trigger dynamic congestion auto-reroute (Feature 8 & 3)
+  useEffect(() => {
+    if (selectedGate && gateStatuses[selectedGate]) {
+      const currentStatus = gateStatuses[selectedGate];
+      if (currentStatus.occupancy_pct >= 85) {
+        let lowestOccupancy = 100;
+        let altGate = null;
+        
+        Object.keys(gateStatuses).forEach(gId => {
+          if (gId !== selectedGate && gateStatuses[gId].occupancy_pct < lowestOccupancy && gateStatuses[gId].occupancy_pct < 60) {
+            lowestOccupancy = gateStatuses[gId].occupancy_pct;
+            altGate = gId;
+          }
+        });
+        
+        if (altGate) {
+          setIsRerouted(true);
+          setOriginalGate(selectedGate);
+          setRecommendedGate(altGate);
+          
+          const noticeText = `⚠️ AUTO-REROUTE WARNING: Gate ${selectedGate} is congested at ${currentStatus.occupancy_pct}% occupancy. StadeX has rerouted your route to Gate ${altGate} (${lowestOccupancy}% occupancy).`;
+          setAccessibilityAnnouncement(noticeText);
+          
+          if (isSpeakEnabled) {
+            speakText(noticeText, language);
+          }
+        }
+      } else {
+        setIsRerouted(false);
+        setRecommendedGate(selectedGate);
+      }
+    }
+  }, [selectedGate, gateStatuses]);
+
   const handleSendMessage = async (textToSend) => {
     const text = textToSend || inputText;
     if (!text.trim()) return;
@@ -492,7 +526,7 @@ export default function App() {
                 className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div className="flex items-center gap-1.5 mb-1 px-1.5">
-                  <span className="text-[10px] text-slate-500 font-medium">
+                  <span className="text-[10px] text-slate-400 font-medium">
                     {msg.sender === 'user' ? 'You' : 'StadeX'}
                   </span>
                   {msg.agent && (
@@ -505,7 +539,7 @@ export default function App() {
                       {msg.agent.replace('_', ' ')}
                     </span>
                   )}
-                  <span className="text-[9px] text-slate-600 font-light">{msg.timestamp}</span>
+                  <span className="text-[9px] text-slate-400 font-light">{msg.timestamp}</span>
                 </div>
 
                 <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
@@ -521,7 +555,7 @@ export default function App() {
             {isTyping && (
               <div className="flex flex-col items-start">
                 <div className="flex items-center gap-1.5 mb-1 px-1.5">
-                  <span className="text-[10px] text-slate-500 font-medium">Orchestrator routing...</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Orchestrator routing...</span>
                 </div>
                 <div className="bg-slate-900/80 border border-slate-800 rounded-2xl rounded-tl-none px-4 py-3 flex gap-1.5 items-center">
                   <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce"></div>
@@ -849,7 +883,7 @@ export default function App() {
                 </p>
                 
                 {/* Forecast predictions display (Feature 1: Queue Prediction Engine) */}
-                <div className="mt-2 flex gap-4 text-[10px] text-slate-500 font-medium">
+                <div className="mt-2 flex gap-4 text-[10px] text-slate-400 font-medium">
                   <span>Forecast (15m): <strong className="text-slate-300">{activeGateStatus.predicted_15m || Math.round(activeGateStatus.occupancy_pct * 1.1)}% capacity</strong></span>
                   <span>Forecast (30m): <strong className="text-slate-300">{activeGateStatus.predicted_30m || Math.round(activeGateStatus.occupancy_pct * 1.25)}% capacity</strong></span>
                 </div>
@@ -859,7 +893,7 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <Clock className="text-cyan-400" size={16} />
                   <div>
-                    <span className="block text-[10px] text-slate-500 uppercase font-semibold">Wait Time</span>
+                    <span className="block text-[10px] text-slate-400 uppercase font-semibold">Wait Time</span>
                     <span className="text-sm font-bold text-slate-200">{activeGateStatus.queue_len_min} min</span>
                   </div>
                 </div>
@@ -867,7 +901,7 @@ export default function App() {
                 <div className="flex items-center gap-2 mr-2">
                   <Shield className="text-cyan-400" size={16} />
                   <div>
-                    <span className="block text-[10px] text-slate-500 uppercase font-semibold">Occupancy</span>
+                    <span className="block text-[10px] text-slate-400 uppercase font-semibold">Occupancy</span>
                     <span className={`text-sm font-bold ${
                       activeGateStatus.occupancy_pct > 85 ? 'text-red-400' :
                       activeGateStatus.occupancy_pct > 60 ? 'text-amber-400' :
